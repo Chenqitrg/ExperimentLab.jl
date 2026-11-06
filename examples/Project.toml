@@ -1,0 +1,12 @@
+[deps]
+ExperimentLab = "29f77e63-5c80-4c5a-8fc3-cbf639322b6d"
+AlgorithmConfigLab = "b0e90283-4d54-4d8d-bc0c-6244e78caa43"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+[sources]
+ExperimentLab = {path = ".."}
+AlgorithmConfigLab = {path = "../../AlgorithmConfigLab"}
+
+[compat]
+julia = "1.12"
+JSON = "1"

@@ -1,0 +1,18 @@
+[deps]
+AlgorithmConfigLab = "b0e90283-4d54-4d8d-bc0c-6244e78caa43"
+ExperimentLab = "29f77e63-5c80-4c5a-8fc3-cbf639322b6d"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+LoggingExtras = "e6f89c97-d47a-5376-807f-9c37f3926c36"
+LoggingFormats = "98105f81-4425-4516-93fd-1664fb551ab6"
+
+[sources]
+AlgorithmConfigLab = {path = "../../../../AlgorithmConfigLab"}
+ExperimentLab = {path = "../../.."}
+
+[compat]
+julia = "1.12"
+JSON = "1"
+Logging = "1"
+LoggingExtras = "1.2"
+LoggingFormats = "1.6"
