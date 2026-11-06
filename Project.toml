@@ -3,7 +3,7 @@ uuid = "29f77e63-5c80-4c5a-8fc3-cbf639322b6d"
 version = "0.1.0"
 
 [deps]
-AlgorithmConfigLab = "b0e90283-4d54-4d8d-bc0c-6244e78caa43"
+Configurations = "5218b696-f38b-4ac9-8b61-a12ec717816d"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -12,22 +12,29 @@ LoggingFormats = "98105f81-4425-4516-93fd-1664fb551ab6"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
-[sources]
-AlgorithmConfigLab = {path = "../AlgorithmConfigLab"}
+[weakdeps]
+MatrixAlgebraKit = "6c742aac-3347-4629-af66-fc926824e5e4"
+
+[extensions]
+ExperimentLabMatrixAlgebraKitExt = "MatrixAlgebraKit"
 
 [compat]
+Accessors = "0.1.44"
+ConstructionBase = "1.6"
+MatrixAlgebraKit = "0.6.9"
 Configurations = "0.17.6"
 Logging = "1"
-LoggingExtras = "1.2"
+LoggingExtras = "1.0.3"
 LoggingFormats = "1.6"
-AlgorithmConfigLab = "0.1"
 JSON = "1"
 julia = "1.12"
 Test = "1.11"
 
 [extras]
-Configurations = "5218b696-f38b-4ac9-8b61-a12ec717816d"
+Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+MatrixAlgebraKit = "6c742aac-3347-4629-af66-fc926824e5e4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Configurations", "Test"]
+test = ["Accessors", "ConstructionBase", "MatrixAlgebraKit", "Test"]

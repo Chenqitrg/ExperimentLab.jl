@@ -1,7 +1,7 @@
 include(joinpath(@__DIR__, "setup.jl"))
 using Configurations: @option
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 import JSON
 
 # 1. The same configuration can have separate executions and separate log files.

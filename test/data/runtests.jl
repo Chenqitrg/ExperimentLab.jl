@@ -1,7 +1,7 @@
 using Configurations: @option
 using Test
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 import JSON
 import Serialization
 const AD = ExperimentLab

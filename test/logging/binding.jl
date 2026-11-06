@@ -1,5 +1,5 @@
 using Configurations: @option
-using Test, ExperimentLab, AlgorithmConfigLab, Logging
+using Test, ExperimentLab, ExperimentLab, Logging
 import JSON
 
 @option struct LogSettings <: AbstractAlgorithmConfig end

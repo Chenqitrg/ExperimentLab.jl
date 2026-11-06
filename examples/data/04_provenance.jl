@@ -1,7 +1,7 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
 using Configurations: @option
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 using LinearAlgebra
 
 # 1. Register fixed parameters, then an execution and one produced state.

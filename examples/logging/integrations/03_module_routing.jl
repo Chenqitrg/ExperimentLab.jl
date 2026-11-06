@@ -17,7 +17,7 @@ registry = EventRegistry("example.routing_step.v1" => RoutingStep)
 
 buffer = IOBuffer()
 our_module = @__MODULE__
-json = FormatLogger(LoggingFormats.JSON(; recursive=true, nest_kwargs=false), buffer)
+json = FormatLogger((io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), buffer)
 ours = EarlyFilteredLogger(log -> log._module === our_module, json)
 foreign = EarlyFilteredLogger(log -> log._module !== our_module, ConsoleLogger(stderr))
 logger = TeeLogger(ours, foreign)

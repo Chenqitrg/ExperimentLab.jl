@@ -4,7 +4,7 @@ read_records(io::IOBuffer) = JSON.parse.(split(String(take!(io)), '\n'; keepempt
     registry = EventRegistry("looptnr.sweep.v1" => UpdateCompleted)
     output, terminal_output = IOBuffer(), IOBuffer()
     disk = MinLevelLogger(FormatLogger(
-        LoggingFormats.JSON(; recursive=true, nest_kwargs=false), output), Logging.Info)
+        (io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), output), Logging.Info)
     terminal = MinLevelLogger(FormatLogger(terminal_output) do io, log
         println(io, log.message, " cost=", log.kwargs[:data].cost)
     end, Logging.Warn)
@@ -33,7 +33,7 @@ end
     registry = EventRegistry("diagnostic.v1" => typeof(DiagnosticValue(value));
                              codecs=(SolverLabel => encode_solver_label,))
     output = IOBuffer()
-    logger = FormatLogger(LoggingFormats.JSON(; recursive=true, nest_kwargs=false), output)
+    logger = FormatLogger((io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), output)
     with_logger(logger) do
         @info "Diagnostic" event_record(registry, DiagnosticValue(value))...
     end
@@ -51,7 +51,7 @@ end
         path = joinpath(directory, "events.jsonl")
         for step in 1:2
             open(path, "a") do io
-                logger = FormatLogger(LoggingFormats.JSON(; recursive=true, nest_kwargs=false), io)
+                logger = FormatLogger((io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), io)
                 with_logger(logger) do
                     @info "Step" event_record(registry, UpdateCompleted(step, 0.1, 0.4))...
                     @test length(readlines(path)) == step
@@ -81,7 +81,7 @@ end
     registry = EventRegistry("step.v1" => UpdateCompleted)
     output, foreign_output = IOBuffer(), IOBuffer()
     ours = EarlyFilteredLogger(log -> log._module === Main,
-        FormatLogger(LoggingFormats.JSON(; recursive=true, nest_kwargs=false), output))
+        FormatLogger((io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), output))
     foreign = EarlyFilteredLogger(log -> log._module !== Main, SimpleLogger(foreign_output))
     with_logger(TeeLogger(ours, foreign)) do
         ForeignLogSource.emit()
@@ -96,7 +96,7 @@ end
     mktempdir() do directory
         path = joinpath(directory, "contexts.jsonl")
         open(path, "a") do io
-            sink = FormatLogger(LoggingFormats.JSON(; recursive=true, nest_kwargs=false), io)
+            sink = FormatLogger((io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), io)
             @sync for step in 1:8
                 Threads.@spawn begin
                     context = TransformerLogger(sink) do log

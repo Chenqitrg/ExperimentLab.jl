@@ -49,8 +49,10 @@ function Logging.handle_message(logger::RecordLogger, args...; kwargs...)
 end
 
 function record_logger(io::IO, store::DataStore, ref::RecordRef{K}) where K
-    sink = LoggingExtras.FormatLogger(
-        LoggingFormats.JSON(; recursive=true, nest_kwargs=false), io; always_flush=true)
+    formatter = LoggingFormats.JSON(; recursive=true, nest_kwargs=false)
+    sink = LoggingExtras.FormatLogger(io; always_flush=true) do output, event
+        formatter(output, event)
+    end
     context = (; store_id=string(store.id), owner=(; kind=string(K), id=string(ref.id)))
     return RecordLogger(sink, context, store.lock)
 end

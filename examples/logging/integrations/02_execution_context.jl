@@ -10,7 +10,7 @@ struct ContextStep <: AbstractLogEvent
 end
 registry = EventRegistry("example.context_step.v1" => ContextStep)
 buffer = IOBuffer()
-sink = FormatLogger(LoggingFormats.JSON(; recursive=true, nest_kwargs=false), buffer)
+sink = FormatLogger((io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), buffer)
 
 # TransformerLogger adds context using ordinary log keywords.
 parent = TransformerLogger(sink) do log

@@ -1,7 +1,7 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
 using Configurations: @option
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 using JSON
 
 # 1. Create a small history with explicit configuration, run, and state identities.

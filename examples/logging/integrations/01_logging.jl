@@ -23,7 +23,7 @@ end
 
 open(path, "a") do io
     disk = MinLevelLogger(FormatLogger(
-        LoggingFormats.JSON(; recursive=true, nest_kwargs=false), io), Logging.Info)
+        (io, event) -> LoggingFormats.JSON(; recursive=true, nest_kwargs=false)(io, event), io), Logging.Info)
     # Change only this terminal threshold to Logging.Warn to silence Info summaries.
     logger = TeeLogger(disk, MinLevelLogger(terminal, Logging.Info))
     with_logger(logger) do

@@ -5,9 +5,12 @@
 The source is taken from the current working trees of AlgorithmDataLab and
 AlgorithmLogLab, including the latter's uncommitted simplification to event schemas.
 ExperimentLab owns the implementations directly and depends on neither package.
-The original directories remain untouched while their callers await migration;
-they are migration checkpoints, not compatibility layers in ExperimentLab.
-Do not make parallel feature changes in both implementations.
+The original directories initially remained as migration checkpoints, not
+compatibility layers in ExperimentLab. AlgorithmLogLab has since been retired
+and its local directory removed: no other package depends on it, and its event
+implementation, tests, and examples are owned here. AlgorithmDataLab remains
+while its domain callers await migration. Do not make parallel feature changes
+in the remaining duplicate data implementations.
 
 | Original | Destination | Changes to review |
 | --- | --- | --- |
@@ -58,14 +61,44 @@ passed in separate processes launched from `/tmp`. The example setup now resolve
 local checkout dependency changes before instantiation, including stale manifests
 left from step 1. No domain algorithms were run and the version remains 0.1.0.
 
+## Step 3: configuration consolidation
+
+The configuration implementation now lives in `src/config/`, in the same module
+as data and logging. `AbstractAlgorithmConfig`, `@config`, `readconfig`, and
+`writeconfig` are exported from ExperimentLab. Author hooks remain qualified.
+Configurations.jl still owns `@option`, defaults, and dictionary conversion;
+Accessors remains the update interface. No compatibility module is retained.
+
+JSON is already a runtime dependency, so configuration file reading/writing is
+ordinary code; the old JSON extension and load-error fallbacks are removed.
+MatrixAlgebraKit formatting/conversion remains an optional extension.
+Configuration tests and examples moved into `test/config/` and `examples/config/`.
+
+Domain callers now depend on ExperimentLab. This loads storage/logging libraries
+alongside configuration, but creates no store, file, or task implicitly. The
+legacy AlgorithmDataLab imports only configuration symbols from ExperimentLab;
+ExperimentLab does not depend on it. Execution remains separate.
+
+The old AlgorithmConfigLab checkout is retired after validating all callers.
+
+`FormatLogger` now receives an ordinary formatting function, supported from
+LoggingExtras 1.0.3 onward. This avoids imposing 1.2 on applications using other
+logging consumers. No MPSKit dependency, version branch, or domain-specific logic
+is added. Full ExperimentLab tests pass with both LoggingExtras 1.0.3 and 1.2.0.
+
+Verification: 556 ExperimentLab tests, UpdateLab and legacy AlgorithmDataLab tests,
+45 focused domain configuration checks, both MatrixAlgebraKit extension load
+orders, and 34 examples passed. All checks used one Julia/BLAS thread; no
+renormalization or MPS optimization was executed.
+
 ## Suggested next review steps
 
 Each step should be reviewed before proceeding to the next:
 
 1. Automatically establish measurement log scopes inside `measure!`, using the
    explicit binding introduced in step 2a. Review nested and asynchronous ownership.
-2. Consolidate configuration and review vocabulary for both computational and
-   laboratory experiments. Do not require tensor types in the infrastructure.
+2. Review shared vocabulary for computational and laboratory experiments.
+   Keep tensor types in domain packages.
 3. Consolidate execution lifecycle and review waiting, completion and failures.
    Decide separately which interactive session controls belong here.
 4. Switch domain-package callers and retire the superseded package implementations.

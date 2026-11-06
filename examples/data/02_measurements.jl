@@ -2,7 +2,7 @@ include(joinpath(@__DIR__, "..", "setup.jl"))
 using Configurations: @option
 # An ordinary matrix spectrum illustrates storage; this is not a CFT calculation.
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 using LinearAlgebra
 
 # 1. Define a measurement configuration, result, and calculation.

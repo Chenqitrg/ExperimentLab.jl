@@ -1,8 +1,7 @@
 include(joinpath(@__DIR__, "setup.jl"))
 using Configurations: @option
 using ExperimentLab
-using AlgorithmConfigLab
-
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 # 1. Register settings and one execution. These calls do not run an algorithm.
 @option struct ReadingSettings <: AbstractAlgorithmConfig
     count::Int = 3

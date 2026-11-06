@@ -3,9 +3,13 @@ module ExperimentLab
 using Dates
 using UUIDs
 using Serialization
-using AlgorithmConfigLab: AbstractAlgorithmConfig, writeconfig
+import Configurations
 import JSON
 import Logging, LoggingExtras, LoggingFormats
+
+export AbstractAlgorithmConfig, @config, readconfig, writeconfig
+public ConfigError, configtree
+public config_constructor, config_fields, config_defaults, value_expression
 
 export AbstractLogEvent, EventRegistry, event_record
 
@@ -19,6 +23,12 @@ public result_data, start_measurement!, finish_measurement!, fail_measurement!, 
 public load_result_data
 public describe
 public with_log
+
+include("config/algorithm_config.jl")
+include("config/construction.jl")
+include("config/tree_parser.jl")
+include("config/tree_output.jl")
+include("config/files.jl")
 
 include("data/types.jl")
 include("data/encoding.jl")

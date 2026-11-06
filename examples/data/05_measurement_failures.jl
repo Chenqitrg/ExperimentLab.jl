@@ -1,8 +1,7 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
 using Configurations: @option
 using ExperimentLab
-using AlgorithmConfigLab
-
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 # 1. Define a measurement that can fail for a particular parameter choice.
 @option struct RatioMeasurement <: AbstractMeasurement
     divisor::Float64 = 1.0

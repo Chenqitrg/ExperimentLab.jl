@@ -22,7 +22,7 @@ results such as spectra and state tensors.
 
 ```julia
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab
 
 struct MatrixPreparation <: AbstractAlgorithmConfig end
 store = DataStore("results/my-run") # Creates a new empty directory or opens a store.
@@ -95,11 +95,11 @@ The configuration binary is written before the attempt is published. Load the
 package defining the configuration type before reading it in a new Julia session.
 Missing or unreadable binaries produce an error rather than a dictionary fallback.
 
-The index also retains AlgorithmConfigLab's JSON representation for inspection
-and explicit JSON import. `constructors=...` at measurement creation supplies
-custom stable JSON names or special codecs; it is unnecessary for native loading.
-For deliberate JSON reconstruction, use AlgorithmConfigLab's `readconfig` with
-explicit constructor mappings. Configuration JSON is never evaluated as Julia code.
+The index also retains the plain configuration dictionary for inspection.
+Native loading restores the saved Julia value. For deliberate JSON reconstruction,
+use `ExperimentLab.readconfig(path, typeof(settings))` with the concrete option
+type (or `Configurations.from_dict` for an in-memory dictionary). Configuration
+JSON is never evaluated as Julia code; there are no constructor mappings.
 The implementation module/package identity, available package version and Julia
 version are recorded. Use explicit provenance metadata for a source revision or
 other environment facts; stored configuration is not source-code archiving or a

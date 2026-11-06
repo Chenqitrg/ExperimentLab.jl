@@ -2,7 +2,7 @@ include(joinpath(@__DIR__, "..", "setup.jl"))
 using Configurations: @option
 # 1. Create a real on-disk store. Variables remain available in the REPL.
 using ExperimentLab
-using AlgorithmConfigLab
+using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 @option struct MatrixPreparation <: AbstractAlgorithmConfig end
 store = DataStore(mktempdir())
 algorithm = ExperimentLab.record_algorithm!(store, MatrixPreparation())
