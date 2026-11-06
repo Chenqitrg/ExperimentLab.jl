@@ -1,9 +1,9 @@
 # Event schemas
 
 Event schemas for algorithm diagnostics. This package owns stable event names,
-field validation, explicit codecs and registry inspection. Julia and existing
-logging libraries own everything about where and how messages are written.
-The logging source introduces no package dependencies, logger type, file writer or execution runtime.
+field validation, explicit codecs and registry inspection. For binding messages
+to execution or measurement files, see [record-bound logs](log-binding.md).
+Julia and existing logging libraries provide message emission and formatting.
 
 ## Start here
 
@@ -39,8 +39,8 @@ focus on these responsibilities and use only this package.
 `describe` remains qualified: `ExperimentLab.describe(registry)` returns a
 JSON-ready NamedTuple with sorted event/codec mappings. `display(registry)` is
 for people. Neither executes codecs or exposes captured callable state.
-External loggers use their own interfaces; there is no ExperimentLab logger
-wrapper or logger-inspection protocol.
+External loggers use their own interfaces. The internal record-bound wrapper is
+not another exported logger API or logger-inspection protocol.
 
 ## Event fields
 
@@ -75,15 +75,15 @@ string fallback for unsupported metadata, belongs to LoggingFormats.
 The caller chooses what to do with the encoded record. For logging, Julia's
 `@info` accepts its named fields; LoggingExtras and LoggingFormats handle output.
 See the separate [integration examples](../examples/logging/integrations/README.md) for
-terminal/JSON output, execution context and module routing. Their dependencies
-and logging-specific behavior are separate from the core walkthrough.
+terminal/JSON output, execution context and module routing. These illustrate
+application-controlled composition separately from the event walkthrough.
 
 ## Review and tests
 
 Start with [the five core examples](../examples/logging/README.md), then read `src/logging/events.jl`
-and `src/logging/show.jl`. No logging source file implements a Logging method or owns an IO stream.
-The main examples depend only on ExperimentLab. LoggingExtras and LoggingFormats belong to tests and optional integration examples.
-JSON is a core dependency used by the data area.
+and `src/logging/show.jl`. The binding implementation is in `src/logging/binding.jl`.
+The main examples import ExperimentLab; LoggingExtras and LoggingFormats are
+core dependencies used by the binding. JSON is also used by the data area.
 
 ```sh
 JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --project=. -e 'using Pkg; Pkg.test(; julia_args=["--compile=min", "-O0", "--threads=1"])'

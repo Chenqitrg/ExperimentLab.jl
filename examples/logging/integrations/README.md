@@ -3,8 +3,8 @@
 These demonstrate application wiring, not ExperimentLab's own implementation.
 Read the [main examples](../README.md) first. This directory has its own project
 with Logging, LoggingExtras, LoggingFormats and JSON. Every script activates and
-instantiates that environment via its first setup line; the main examples do not
-install these dependencies.
+instantiates that environment via its first setup line. These libraries are also
+used internally by ExperimentLab's record-bound output.
 
 | Example | External responsibility |
 | --- | --- |
@@ -16,7 +16,7 @@ Run a whole file, or first execute its setup/import lines before selecting secti
 in VS Code. Variables remain available in the REPL. Returning to a main example
 activates the main examples environment again.
 
-ExperimentLab contributes only `event_record(registry, event)`. Its result is a
+In these examples ExperimentLab contributes only `event_record(registry, event)`. Its result is a
 NamedTuple with `event` and `data`; splatting it into `@info` supplies those keywords.
 Formatting, filtering, routing and writing belong to the other libraries.
 

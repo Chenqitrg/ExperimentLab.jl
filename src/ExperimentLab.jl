@@ -5,6 +5,7 @@ using UUIDs
 using Serialization
 using AlgorithmConfigLab: AbstractAlgorithmConfig, writeconfig
 import JSON
+import Logging, LoggingExtras, LoggingFormats
 
 export AbstractLogEvent, EventRegistry, event_record
 
@@ -17,6 +18,7 @@ public copy_state, delete_snapshot!, pin_snapshot!, release_pin!
 public result_data, start_measurement!, finish_measurement!, fail_measurement!, load_measurement
 public load_result_data
 public describe
+public with_log
 
 include("data/types.jl")
 include("data/encoding.jl")
@@ -32,4 +34,5 @@ include("data/tree.jl")
 abstract type AbstractLogEvent end
 include("logging/events.jl")
 include("logging/show.jl")
+include("logging/binding.jl")
 end

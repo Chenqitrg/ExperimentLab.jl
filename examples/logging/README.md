@@ -51,4 +51,5 @@ record.data
 
 Only after reviewing the core, see [integrations](integrations/README.md) for
 LoggingExtras/LoggingFormats composition. That directory has a separate project
-and setup. Its dependencies are not required by any main example.
+and setup for directly composing the logging libraries. Those libraries are now
+also dependencies of ExperimentLab's record-bound output.

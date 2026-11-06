@@ -32,7 +32,7 @@ diagnostic = event_record(registry, ReadingsSaved(length(restored)))
 @assert diagnostic == (event="readings.saved.v1", data=(count=3,))
 
 # Julia Logging prints this message. It is not automatically saved in the store.
-# Automatic execution/measurement log binding is the next migration step.
+# See 02_execution_logs.jl for explicitly binding messages with with_log.
 @info "Readings saved" diagnostic...
 
 # 4. Complete the execution and inspect both areas through the same package.

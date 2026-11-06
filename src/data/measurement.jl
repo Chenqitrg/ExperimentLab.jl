@@ -33,6 +33,7 @@ function start_measurement!(store::DataStore, definition::AbstractMeasurement, s
             serialize(io, (; schema=1, attempt=string(ref.id), value=definition))
         end
         document["measurements"][string(ref.id)]["julia_config"] = "measurements/$(ref.id).config.bin"
+        document["measurements"][string(ref.id)]["log_path"] = relative_log_path(ref)
         return ref
     end
 end
@@ -93,7 +94,7 @@ function measure!(store::DataStore, definition::AbstractMeasurement, input;
     result = try
         measure(definition, input)
     catch error
-        error isa InterruptException && rethrow()
+        (error isa InterruptException || is_log_failure(error)) && rethrow()
         return fail_measurement!(store, ref, error)
     end
     # Encoding/persistence is deliberately outside the calculation-failure catch.

@@ -8,4 +8,6 @@ import LoggingFormats, JSON
     include("encoding.jl")
     include("integration.jl")
     include("show.jl")
+    include("binding.jl")
+    include("binding_errors.jl")
 end

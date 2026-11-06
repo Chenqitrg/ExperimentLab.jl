@@ -322,7 +322,8 @@ implementation packages and a compatible environment. Cross-version binary
 compatibility is not guaranteed. These constraints apply to snapshots, Julia
 result payloads, and algorithm/measurement configurations. JSON-only readers never deserialize
 binary payloads. No background tasks, memory admission controller, remote transport,
-execution engine, log integration or scientific tensor adapters are implemented here.
+execution engine or scientific tensor adapters are implemented here. Execution and
+measurement records also hold relative `log_path` fields; see [record-bound logs](log-binding.md).
 
 ## Validation
 

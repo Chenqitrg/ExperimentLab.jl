@@ -49,9 +49,11 @@ function record_execution!(store::DataStore, algorithm::AlgorithmRef;
     origin = plain_data(provenance)
     return change!(store) do document
         initial_state === nothing || lookup(document, store, initial_state)
-        add_record!(document, store, :execution; parent=algorithm, label=String(label),
+        ref = add_record!(document, store, :execution; parent=algorithm, label=String(label),
             initial_state=initial_state === nothing ? nothing : ref_data(initial_state),
             provenance=origin, julia_version=string(VERSION), status="running")
+        document["executions"][string(ref.id)]["log_path"] = relative_log_path(ref)
+        return ref
     end
 end
 

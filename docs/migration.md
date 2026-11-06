@@ -1,6 +1,6 @@
 # Incremental migration
 
-## Step 1: data and event schemas (current)
+## Step 1: data and event schemas (committed as 316b8f1)
 
 The source is taken from the current working trees of AlgorithmDataLab and
 AlgorithmLogLab, including the latter's uncommitted simplification to event schemas.
@@ -38,14 +38,32 @@ and multidimensional arrays. Consolidating them is not required to move the code
 - Tests and examples used one Julia thread and one BLAS thread. No tensor backend
   or domain algorithm was run. The old package working trees were not edited.
 
+## Step 2a: explicit log binding (current)
+
+- Execution and measurement records now contain relative `log_path` fields.
+- Qualified `with_log(store, owner)` appends JSON Lines with automatic ownership
+  and per-message flushing, reusing LoggingExtras and LoggingFormats.
+- One small internal logger makes output failures propagate and synchronizes
+  append positioning, writing and flushing across scopes sharing a store.
+- Measurement calculation handling preserves direct and task-wrapped log failures.
+- No execution lifecycle or automatic measurement log scope is introduced.
+
+Review [the binding example](../examples/02_execution_logs.jl),
+[the implementation](../src/logging/binding.jl) and [its contract](log-binding.md).
+The new logging dependencies implement actual package functionality, not demo-only behavior.
+
+Verification on Julia 1.12.5: all 408 package tests passed with one Julia/BLAS
+thread; the 50 binding tests also passed with two Julia threads. All 17 examples
+passed in separate processes launched from `/tmp`. The example setup now resolves
+local checkout dependency changes before instantiation, including stale manifests
+left from step 1. No domain algorithms were run and the version remains 0.1.0.
+
 ## Suggested next review steps
 
 Each step should be reviewed before proceeding to the next:
 
-1. Bind logs to the store and to an execution or measurement. Establish execution
-   context before the first message; ordinary `@info "Experiment started"` must
-   work before a state exists. Nested and asynchronous measurements must retain
-   their own context. Use Julia Logging and existing output libraries.
+1. Automatically establish measurement log scopes inside `measure!`, using the
+   explicit binding introduced in step 2a. Review nested and asynchronous ownership.
 2. Consolidate configuration and review vocabulary for both computational and
    laboratory experiments. Do not require tensor types in the infrastructure.
 3. Consolidate execution lifecycle and review waiting, completion and failures.

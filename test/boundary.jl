@@ -7,8 +7,7 @@
     @test exported == expected
     @test !Base.isexported(ExperimentLab, :describe)
     loaded = Set(id.name for id in keys(Base.loaded_modules))
-    for name in ("AlgorithmDataLab", "AlgorithmLogLab", "ExecutionLab", "TensorKit",
-                 "LoggingExtras", "LoggingFormats")
+    for name in ("AlgorithmDataLab", "AlgorithmLogLab", "ExecutionLab", "TensorKit")
         @test !(name in loaded)
     end
     @test !isdefined(ExperimentLab, :AlgorithmLogger)
