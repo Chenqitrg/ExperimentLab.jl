@@ -1,9 +1,10 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 
 # 1. Register one configuration and explicitly reuse it for two executions.
-@kwdef struct IterationSettings <: AbstractAlgorithmConfig
+@option struct IterationSettings <: AbstractAlgorithmConfig
     iterations::Int = 2
 end
 store = DataStore(mktempdir())
@@ -29,7 +30,7 @@ branch_state = record_state!(store, branch; step=1)
 # This records provenance only. The caller loads the tensor and runs the algorithm.
 
 # 4. Measurements belong to the state they inspect; no second tensor copy on disk.
-struct SquaredNorm <: AbstractMeasurement end
+@option struct SquaredNorm <: AbstractMeasurement end
 struct SquaredNormResult <: AbstractMeasurementResult
     value::Float64
 end

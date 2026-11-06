@@ -1,10 +1,11 @@
 include(joinpath(@__DIR__, "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 import JSON
 
 # 1. The same configuration can have separate executions and separate log files.
-struct LoggedExperimentSettings <: AbstractAlgorithmConfig end
+@option struct LoggedExperimentSettings <: AbstractAlgorithmConfig end
 store = DataStore(mktempdir())
 algorithm = ExperimentLab.record_algorithm!(store, LoggedExperimentSettings())
 first_run = ExperimentLab.record_execution!(store, algorithm; label="first run")

@@ -27,9 +27,9 @@ function plain_data(value, path::AbstractString="data", depth::Integer=0)
     throw(ArgumentError("$path: unsupported value $(typeof(value)); supply plain data explicitly"))
 end
 
-function config_document(config::AbstractAlgorithmConfig; constructors=())
+function config_document(config::AbstractAlgorithmConfig)
     io = IOBuffer()
-    writeconfig(io, config; constructors)
+    writeconfig(io, config)
     return plain_data(JSON.parse(String(take!(io))), "config")
 end
 

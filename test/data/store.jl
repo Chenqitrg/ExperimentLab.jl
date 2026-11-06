@@ -1,3 +1,4 @@
+using Configurations: @option
 @testset "Create and reopen a self-contained data store" begin
     mktempdir() do path
         store = DataStore(path)
@@ -28,7 +29,7 @@ end
         algorithm = AD.record_algorithm!(store, ExampleRun(); label="scan")
         run = AD.record_execution!(store, algorithm; provenance=(revision="abc123",))
         @test AD.parent_ref(store, run) == algorithm
-        @test AD.info(store, algorithm)["config"]["root"]["kwargs"]["chi"] == 8
+        @test AD.info(store, algorithm)["config"]["chi"] == 8
         @test AD.load_algorithm(DataStore(path), algorithm).chi == 8
         @test AD.info(store, run)["provenance"]["revision"] == "abc123"
         produced = record_state!(store, run; step=3, metadata=(temperature=0.5,))
@@ -57,7 +58,7 @@ end
     end
 end
 
-struct UnserializableAlgorithm <: AbstractAlgorithmConfig end
+@option struct UnserializableAlgorithm <: AbstractAlgorithmConfig end
 Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableAlgorithm) =
     error("algorithm serialization failed")
 mutable struct MutableAlgorithm <: AbstractAlgorithmConfig

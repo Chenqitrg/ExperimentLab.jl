@@ -1,9 +1,10 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 
 # 1. Define a measurement that can fail for a particular parameter choice.
-@kwdef struct RatioMeasurement <: AbstractMeasurement
+@option struct RatioMeasurement <: AbstractMeasurement
     divisor::Float64 = 1.0
 end
 struct RatioResult <: AbstractMeasurementResult
@@ -15,7 +16,7 @@ function ExperimentLab.measure(config::RatioMeasurement, values)
 end
 
 # 2. A calculation error creates a failed attempt.
-struct VectorSettings <: AbstractAlgorithmConfig end
+@option struct VectorSettings <: AbstractAlgorithmConfig end
 store = DataStore(mktempdir())
 algorithm = ExperimentLab.record_algorithm!(store, VectorSettings())
 run = ExperimentLab.record_execution!(store, algorithm)

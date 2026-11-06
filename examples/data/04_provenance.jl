@@ -1,10 +1,11 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 using LinearAlgebra
 
 # 1. Register fixed parameters, then an execution and one produced state.
-@kwdef struct ScanSettings <: AbstractAlgorithmConfig
+@option struct ScanSettings <: AbstractAlgorithmConfig
     chi::Int = 16
 end
 store = DataStore(mktempdir())
@@ -16,7 +17,7 @@ saved = save_snapshot!(store, capture(state, [3.0, 4.0]))
 ExperimentLab.finish_execution!(store, run)
 
 # 2. Later analysis belongs to the original state, even after the run finishes.
-struct NormMeasurement <: AbstractMeasurement end
+@option struct NormMeasurement <: AbstractMeasurement end
 struct NormResult <: AbstractMeasurementResult
     value::Float64
 end

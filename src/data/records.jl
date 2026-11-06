@@ -9,10 +9,10 @@ algorithm_path(store::DataStore, id::UUID) = joinpath(store.path, "algorithms", 
 
 """Register one fixed configuration. Equal configurations are never merged automatically."""
 function record_algorithm!(store::DataStore, config::AbstractAlgorithmConfig;
-        label::AbstractString="", constructors=(), metadata=(;))
+        label::AbstractString="", metadata=(;))
     ismutabletype(typeof(config)) && throw(ArgumentError("algorithm configurations must be immutable"))
     frozen = deepcopy(config)
-    encoded = config_document(frozen; constructors)
+    encoded = config_document(frozen)
     details = plain_data(metadata)
     provider = plain_data(implementation(frozen))
     return change!(store) do document

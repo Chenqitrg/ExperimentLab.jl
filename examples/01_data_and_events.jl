@@ -1,9 +1,10 @@
 include(joinpath(@__DIR__, "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 
 # 1. Register settings and one execution. These calls do not run an algorithm.
-@kwdef struct ReadingSettings <: AbstractAlgorithmConfig
+@option struct ReadingSettings <: AbstractAlgorithmConfig
     count::Int = 3
 end
 settings = ReadingSettings()

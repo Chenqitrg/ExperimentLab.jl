@@ -1,4 +1,5 @@
-@kwdef struct SmallestValues <: AbstractMeasurement
+using Configurations: @option
+@option struct SmallestValues <: AbstractMeasurement
     count::Int = 2
     scale::Float64 = 1.0
 end
@@ -14,7 +15,7 @@ end
 struct InvalidResult <: AbstractMeasurementResult
     value::ComplexF64
 end
-struct InvalidMeasurement <: AbstractMeasurement end
+@option struct InvalidMeasurement <: AbstractMeasurement end
 AD.measure(::InvalidMeasurement, input) = InvalidResult(1 + 2im)
 struct MatrixResult <: AbstractMeasurementResult
     matrix::Matrix{Float64}
@@ -152,11 +153,12 @@ Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableResu
 
         # A separate Julia process has no writer-side type registry or cached result.
         script = """
+        using Configurations: @option
         using ExperimentLab, UUIDs
         struct TypedResult{T} <: AbstractMeasurementResult
             values::Vector{T}
         end
-        @kwdef struct SmallestValues <: AbstractMeasurement
+        @option struct SmallestValues <: AbstractMeasurement
             count::Int = 2
             scale::Float64 = 1.0
         end
@@ -198,7 +200,7 @@ end
 end
 
 
-struct UnserializableMeasurement <: AbstractMeasurement end
+@option struct UnserializableMeasurement <: AbstractMeasurement end
 Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableMeasurement) =
     error("measurement serialization failed")
 
@@ -206,20 +208,19 @@ Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableMeas
     mktempdir() do path
         store = DataStore(path)
         source = test_state(store)
-        attempt = AD.start_measurement!(store, SmallestValues(count=1, scale=3.0), source;
-            constructors=("spectrum-v1" => SmallestValues,))
+        attempt = AD.start_measurement!(store, SmallestValues(count=1, scale=3.0), source)
         @test AD.info(store, attempt)["status"] == "running"
         definition = AD.load_measurement(DataStore(path), attempt)
         @test definition isa SmallestValues
         @test definition.count == 1
         @test definition.scale == 3.0
-        @test AD.info(store, attempt)["config"]["root"]["constructor"] == "spectrum-v1"
+        @test AD.info(store, attempt)["config"]["count"] == 1
         mktempdir() do other_path
             @test_throws ArgumentError AD.load_measurement(DataStore(other_path), attempt)
         end
         rm(joinpath(path, "measurements", "$(attempt.id).config.bin"))
         @test_throws SystemError AD.load_measurement(store, attempt)
-        @test AD.info(store, attempt)["config"]["root"]["kwargs"]["scale"] == 3.0
+        @test AD.info(store, attempt)["config"]["scale"] == 3.0
     end
 end
 

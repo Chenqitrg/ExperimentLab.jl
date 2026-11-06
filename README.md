@@ -64,3 +64,10 @@ tests additionally verify that ExperimentLab loads neither predecessor package,
 ExecutionLab nor TensorKit. LoggingExtras and LoggingFormats are now direct
 dependencies used for bound log output. Tests use tiny inputs, including injected
 write/flush failures and overlapping log scopes.
+
+## Configuration definitions
+
+Define stored algorithm and measurement configurations with `Configurations.@option`
+(and the appropriate abstract supertype). Their readable metadata contains the
+plain nested dictionary from Configurations.jl, without constructor registries.
+`load_algorithm` and `load_measurement` still restore native Julia values.

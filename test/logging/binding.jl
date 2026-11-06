@@ -1,8 +1,9 @@
+using Configurations: @option
 using Test, ExperimentLab, AlgorithmConfigLab, Logging
 import JSON
 
-struct LogSettings <: AbstractAlgorithmConfig end
-struct LoggedMeasurement <: AbstractMeasurement end
+@option struct LogSettings <: AbstractAlgorithmConfig end
+@option struct LoggedMeasurement <: AbstractMeasurement end
 struct LoggedResult <: AbstractMeasurementResult end
 ExperimentLab.measure(::LoggedMeasurement, input) = (@info "Measuring"; LoggedResult())
 

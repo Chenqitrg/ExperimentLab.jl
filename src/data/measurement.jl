@@ -13,9 +13,9 @@ end
 
 """Publish a running measurement attempt for an external coordinator or `measure!`."""
 function start_measurement!(store::DataStore, definition::AbstractMeasurement, state::StateRef;
-        input_snapshot::Union{Nothing,SnapshotRef}=nothing, constructors=(), metadata=(;))
+        input_snapshot::Union{Nothing,SnapshotRef}=nothing, metadata=(;))
     ismutabletype(typeof(definition)) && throw(ArgumentError("measurement configurations must be immutable"))
-    config = config_document(definition; constructors)
+    config = config_document(definition)
     encoded = plain_data(metadata)
     provider = plain_data(implementation(definition))
     return change!(store) do document

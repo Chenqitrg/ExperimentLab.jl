@@ -1,9 +1,10 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 
 # 1. Save a state that will also be required by a checkpoint.
-struct RestartSettings <: AbstractAlgorithmConfig end
+@option struct RestartSettings <: AbstractAlgorithmConfig end
 store = DataStore(mktempdir())
 algorithm = ExperimentLab.record_algorithm!(store, RestartSettings())
 run = ExperimentLab.record_execution!(store, algorithm)

@@ -1,11 +1,12 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
+using Configurations: @option
 # An ordinary matrix spectrum illustrates storage; this is not a CFT calculation.
 using ExperimentLab
 using AlgorithmConfigLab
 using LinearAlgebra
 
 # 1. Define a measurement configuration, result, and calculation.
-@kwdef struct EigenvalueMeasurement <: AbstractMeasurement
+@option struct EigenvalueMeasurement <: AbstractMeasurement
     count::Int = 2
 end
 struct EigenvalueResult <: AbstractMeasurementResult
@@ -18,7 +19,7 @@ function ExperimentLab.measure(config::EigenvalueMeasurement, matrix)
 end
 
 # 2. Register the producing algorithm and state, then measure the current matrix without saving a snapshot.
-struct MatrixSettings <: AbstractAlgorithmConfig end
+@option struct MatrixSettings <: AbstractAlgorithmConfig end
 store = DataStore(mktempdir())
 algorithm = ExperimentLab.record_algorithm!(store, MatrixSettings())
 run = ExperimentLab.record_execution!(store, algorithm)

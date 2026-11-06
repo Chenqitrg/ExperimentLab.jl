@@ -1,7 +1,8 @@
-@kwdef struct TreeConfig <: AbstractAlgorithmConfig
+using Configurations: @option
+@option struct TreeConfig <: AbstractAlgorithmConfig
     scales::Vector{Float64} = [1.0, 2.0]
 end
-struct TreeMeasurement <: AbstractMeasurement end
+@option struct TreeMeasurement <: AbstractMeasurement end
 struct TreeResult <: AbstractMeasurementResult
     value::Float64
 end

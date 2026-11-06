@@ -1,13 +1,14 @@
 include(joinpath(@__DIR__, "..", "setup.jl"))
+using Configurations: @option
 using ExperimentLab
 using AlgorithmConfigLab
 using JSON
 
 # 1. Create a small history with explicit configuration, run, and state identities.
-@kwdef struct DescriptionSettings <: AbstractAlgorithmConfig
+@option struct DescriptionSettings <: AbstractAlgorithmConfig
     iterations::Int = 2
 end
-struct DescriptionMeasurement <: AbstractMeasurement end
+@option struct DescriptionMeasurement <: AbstractMeasurement end
 struct DescriptionResult <: AbstractMeasurementResult
     total::Float64
 end

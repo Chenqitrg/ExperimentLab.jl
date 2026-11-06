@@ -1,3 +1,4 @@
+using Configurations: @option
 # Deterministic failures exercise the real FormatLogger write/flush path without
 # filling a disk or relying on filesystem permission behavior under privileged users.
 struct FaultLogIO <: IO
@@ -10,7 +11,7 @@ Base.write(io::FaultLogIO, bytes::Vector{UInt8}) =
     io.mode === :write ? error("forced write failure") : write(io.buffer, bytes)
 Base.flush(io::FaultLogIO) = io.mode === :flush ? error("forced flush failure") : nothing
 
-struct AsyncLoggedMeasurement <: AbstractMeasurement end
+@option struct AsyncLoggedMeasurement <: AbstractMeasurement end
 function ExperimentLab.measure(::AsyncLoggedMeasurement, input)
     @sync @async @info "Async measurement"
     return LoggedResult()

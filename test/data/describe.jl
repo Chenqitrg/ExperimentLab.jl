@@ -22,7 +22,7 @@
         root = only(description.children)
         @test root.id == string(algorithm.id)
         @test root.parent === nothing
-        @test root.config["root"]["kwargs"]["chi"] == 8
+        @test root.config["chi"] == 8
         @test root.child_count == 2
         data = JSON.parse(JSON.json(description))
         @test data["children"][1]["kind"] == "algorithm"
@@ -44,8 +44,8 @@
         @test only(branch_node.children).id == string(branch_state.id)
         @test !occursin("unreadable payload", JSON.json(description))
         # Returned metadata is detached from disk and subsequent descriptions.
-        root.config["root"]["kwargs"]["chi"] = 999
-        @test AD.describe(store, algorithm).config["root"]["kwargs"]["chi"] == 8
+        root.config["chi"] = 999
+        @test AD.describe(store, algorithm).config["chi"] == 8
         shallow = AD.describe(store, run; maxdepth=0)
         @test shallow.truncated && isempty(shallow.children)
         @test shallow.child_count == shallow.omitted_children == 1

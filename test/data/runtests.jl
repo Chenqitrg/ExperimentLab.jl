@@ -1,3 +1,4 @@
+using Configurations: @option
 using Test
 using ExperimentLab
 using AlgorithmConfigLab
@@ -5,7 +6,7 @@ import JSON
 import Serialization
 const AD = ExperimentLab
 
-@kwdef struct ExampleRun <: AbstractAlgorithmConfig
+@option struct ExampleRun <: AbstractAlgorithmConfig
     chi::Int = 8
 end
 
