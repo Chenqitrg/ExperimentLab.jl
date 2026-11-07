@@ -2,13 +2,11 @@
 # This does not promise fsync durability or support independently opened writers.
 function atomic_write(f, path::AbstractString)
     temporary, io = mktemp(dirname(path))
+    close(io)
     try
-        f(io)
-        flush(io)
-        close(io)
+        f(temporary) # The writer closes the file before publication.
         Base.Filesystem.rename(temporary, path)
     finally
-        isopen(io) && close(io)
         ispath(temporary) && rm(temporary)
     end
     return nothing
@@ -16,10 +14,21 @@ end
 
 function write_json(path::AbstractString, document::Union{AbstractDict,NamedTuple})
     text = JSON.json(document) * "\n"
-    atomic_write(path) do io
-        write(io, text) == ncodeunits(text) || error("incomplete JSON write")
+    atomic_write(path) do temporary
+        open(temporary, "w") do io
+            write(io, text) == ncodeunits(text) || error("incomplete JSON write")
+        end
     end
 end
+
+# Use JLD2's file backend directly; do not buffer a whole tensor in memory.
+function write_native(path::AbstractString, value)
+    atomic_write(path) do temporary
+        JLD2.jldsave(temporary; value)
+    end
+end
+
+read_native(path::AbstractString) = JLD2.load(path, "value")
 
 function read_index(path::AbstractString)
     document = JSON.parsefile(joinpath(path, "index.json"); dicttype=Dict{String,Any})

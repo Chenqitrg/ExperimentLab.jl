@@ -131,7 +131,8 @@ struct TypedResult{T} <: AbstractMeasurementResult
     values::Vector{T}
 end
 struct UnserializableResult <: AbstractMeasurementResult end
-Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableResult) =
+JLD2.writeas(::Type{UnserializableResult}) = String
+JLD2.wconvert(::Type{String}, ::UnserializableResult) =
     error("result serialization failed")
 
 @testset "Default result loading restores Julia types and detached values" begin
@@ -175,9 +176,9 @@ Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableResu
         @test success(`$(Base.julia_cmd()) --startup-file=no --compile=min -O0 --threads=1 --project=$project -e $script $path $(string(attempt.id))`)
 
         # Frontend data remains readable without the Julia payload.
-        rm(joinpath(path, "measurements", "$(attempt.id).bin"))
+        rm(joinpath(path, "measurements", "$(attempt.id).jld2"))
         @test AD.load_result_data(store, attempt)["values"] == [1, 2]
-        @test_throws SystemError load_result(store, attempt)
+        @test_throws ArgumentError load_result(store, attempt)
     end
 end
 
@@ -192,7 +193,7 @@ end
         @test_throws ArgumentError load_result(store, attempt)
 
         blocked = AD.start_measurement!(store, SmallestValues(), source)
-        mkdir(joinpath(path, "measurements", "$(blocked.id).bin"))
+        mkdir(joinpath(path, "measurements", "$(blocked.id).jld2"))
         @test_throws Exception AD.finish_measurement!(store, blocked, Spectrum([1.0]))
         @test AD.info(store, blocked)["status"] == "running"
         @test AD.info(store, blocked)["result"] === nothing
@@ -201,7 +202,8 @@ end
 
 
 @option struct UnserializableMeasurement <: AbstractMeasurement end
-Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableMeasurement) =
+JLD2.writeas(::Type{UnserializableMeasurement}) = String
+JLD2.wconvert(::Type{String}, ::UnserializableMeasurement) =
     error("measurement serialization failed")
 
 @testset "Configurations are readable before completion without constructor mappings" begin
@@ -218,8 +220,8 @@ Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableMeas
         mktempdir() do other_path
             @test_throws ArgumentError AD.load_measurement(DataStore(other_path), attempt)
         end
-        rm(joinpath(path, "measurements", "$(attempt.id).config.bin"))
-        @test_throws SystemError AD.load_measurement(store, attempt)
+        rm(joinpath(path, "measurements", "$(attempt.id).config.jld2"))
+        @test_throws ArgumentError AD.load_measurement(store, attempt)
         @test AD.info(store, attempt)["config"]["scale"] == 3.0
     end
 end

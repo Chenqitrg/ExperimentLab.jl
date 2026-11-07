@@ -5,3 +5,4 @@ include("boundary.jl")
 end
 include("data/runtests.jl")
 include("logging/runtests.jl")
+include("execution/runtests.jl")

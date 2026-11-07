@@ -107,7 +107,7 @@ reproducibility guarantee.
 
 ## Result encoding
 
-Each completed result has two representations: a Julia Serialization file for
+Each completed result has two representations: a JLD2 file for
 `load_result`, and a JSON document for frontends and other languages. These are
 small measurement results, not extra copies of the input tensor. Both files must
 finish writing before the attempt is marked completed. The result must not be
@@ -279,12 +279,12 @@ reference each other's states or payloads; cross-store imports are unsupported.
 
 ```text
 store/
-  index.json                  # Versioned provenance, statuses and references.
-  algorithms/<id>.bin        # Original fixed algorithm configuration.
-  tensors/<snapshot-id>.bin   # Trusted Julia Serialization payloads.
-  measurements/<id>.json      # Frontend-readable scientific result documents.
-  measurements/<id>.bin       # Original Julia result type and values.
-  measurements/<id>.config.bin # Original measurement configuration.
+  index.json                    # Versioned provenance, statuses and references.
+  algorithms/<id>.jld2          # Original fixed algorithm configuration.
+  tensors/<snapshot-id>.jld2    # Julia tensor payloads.
+  measurements/<id>.json       # Frontend-readable scientific result documents.
+  measurements/<id>.jld2       # Original Julia result type and values.
+  measurements/<id>.config.jld2 # Original measurement configuration.
 ```
 
 The format has schema version 1, independent of the package version. JSON index
@@ -317,18 +317,20 @@ orphan deletion or restart recovery is provided. Removing a payload publishes it
 unavailability before deleting bytes, so a deletion failure leaves an orphan
 rather than a falsely available record.
 
-Binary payloads use Julia Serialization: load only trusted files with the required
-implementation packages and a compatible environment. Cross-version binary
-compatibility is not guaranteed. These constraints apply to snapshots, Julia
-result payloads, and algorithm/measurement configurations. JSON-only readers never deserialize
-binary payloads. No background tasks, memory admission controller, remote transport,
-execution engine or scientific tensor adapters are implemented here. Execution and
+All native Julia payloads use JLD2 with one root entry named `value`. Snapshot
+files contain the captured value directly; configuration and result files contain
+a small envelope with schema, owner ID, and the original value. Load the packages
+that define these types before reading, and use the original code and dependency
+environment. JLD2 does not provide application-level migrations for changed types.
+JSON-only readers never load binary payloads. The storage layer creates no background tasks and has no memory admission
+controller, remote transport or scientific tensor adapters. Live generator
+execution is documented separately in [execution controls](execution.md). Execution and
 measurement records also hold relative `log_path` fields; see [record-bound logs](log-binding.md).
 
 ## Validation
 
 ```sh
-OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --project=. -e 'using Pkg; Pkg.test(; julia_args=["--compile=min", "-O0", "--threads=1"])'
+OPENBLAS_NUM_THREADS=1 JULIA_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --project=. -e 'using Pkg; Pkg.test(; julia_args=["-O0", "--threads=1"])'
 ```
 
 Tests use tiny states and deterministic failures, including blocked publication,

@@ -28,11 +28,10 @@ function start_measurement!(store::DataStore, definition::AbstractMeasurement, s
             input_snapshot=input_snapshot === nothing ? nothing : ref_data(input_snapshot),
             config, implementation=provider, metadata=encoded, status="running",
             config_type=string(typeof(definition)),
-            julia_config_format="julia-serialization-v1", result=nothing, error=nothing)
-        atomic_write(measurement_config_path(store, ref.id)) do io
-            serialize(io, (; schema=1, attempt=string(ref.id), value=definition))
-        end
-        document["measurements"][string(ref.id)]["julia_config"] = "measurements/$(ref.id).config.bin"
+            julia_config_format="jld2-v1", result=nothing, error=nothing)
+        write_native(measurement_config_path(store, ref.id),
+            (; schema=1, attempt=string(ref.id), value=definition))
+        document["measurements"][string(ref.id)]["julia_config"] = "measurements/$(ref.id).config.jld2"
         document["measurements"][string(ref.id)]["log_path"] = relative_log_path(ref)
         return ref
     end
@@ -45,8 +44,8 @@ function running_attempt(document::AbstractDict, store::DataStore, ref::Measurem
 end
 
 result_path(store::DataStore, id::UUID) = joinpath(store.path, "measurements", string(id) * ".json")
-native_result_path(store::DataStore, id::UUID) = joinpath(store.path, "measurements", string(id) * ".bin")
-measurement_config_path(store::DataStore, id::UUID) = joinpath(store.path, "measurements", string(id) * ".config.bin")
+native_result_path(store::DataStore, id::UUID) = joinpath(store.path, "measurements", string(id) * ".jld2")
+measurement_config_path(store::DataStore, id::UUID) = joinpath(store.path, "measurements", string(id) * ".config.jld2")
 
 """Encode and persist a result before publishing completion. Failures propagate."""
 function finish_measurement!(store::DataStore, ref::MeasurementRef, result::AbstractMeasurementResult)
@@ -54,15 +53,14 @@ function finish_measurement!(store::DataStore, ref::MeasurementRef, result::Abst
         type=string(typeof(result)), data=plain_data(result_data(result), "result"))
     change!(store) do document
         record = running_attempt(document, store, ref)
-        atomic_write(native_result_path(store, ref.id)) do io
-            serialize(io, (; schema=1, attempt=string(ref.id), value=result))
-        end
+        write_native(native_result_path(store, ref.id),
+            (; schema=1, attempt=string(ref.id), value=result))
         write_json(result_path(store, ref.id), payload)
         record["status"] = "completed"
         record["finished"] = timestamp()
         record["result"] = "measurements/$(ref.id).json"
-        record["julia_result"] = "measurements/$(ref.id).bin"
-        record["julia_result_format"] = "julia-serialization-v1"
+        record["julia_result"] = "measurements/$(ref.id).jld2"
+        record["julia_result_format"] = "jld2-v1"
         record["result_type"] = string(typeof(result))
     end
     return ref
@@ -80,6 +78,17 @@ function fail_measurement!(store::DataStore, ref::MeasurementRef, error)
     return ref
 end
 
+# Interrupts and log I/O failures must escape measurement result handling,
+# including when wrapped by Session.fetch, task fetch/wait, or @sync.
+function must_rethrow_measurement(error)
+    (error isa InterruptException || error isa LogWriteError) && return true
+    error isa CapturedException && return must_rethrow_measurement(error.ex)
+    error isa CompositeException && return any(must_rethrow_measurement, error.exceptions)
+    error isa TaskFailedException && return any(
+        item -> must_rethrow_measurement(item.exception), Base.current_exceptions(error.task; backtrace=false))
+    return false
+end
+
 """
     measure!(store, definition, input; state, ...)
     measure!(store, definition, saved_snapshot; ...)
@@ -94,7 +103,7 @@ function measure!(store::DataStore, definition::AbstractMeasurement, input;
     result = try
         measure(definition, input)
     catch error
-        (error isa InterruptException || is_log_failure(error)) && rethrow()
+        must_rethrow_measurement(error) && rethrow()
         return fail_measurement!(store, ref, error)
     end
     # Encoding/persistence is deliberately outside the calculation-failure catch.
@@ -121,9 +130,9 @@ Use qualified `load_result_data` for the independent, frontend-readable JSON dat
 function load_result(store::DataStore, ref::MeasurementRef)
     record = info(store, ref)
     record["status"] == "completed" || throw(ArgumentError("measurement has no completed result"))
-    get(record, "julia_result_format", nothing) == "julia-serialization-v1" ||
+    get(record, "julia_result_format", nothing) == "jld2-v1" ||
         throw(ArgumentError("measurement has no supported Julia result payload"))
-    payload = open(deserialize, native_result_path(store, ref.id))
+    payload = read_native(native_result_path(store, ref.id))
     payload isa NamedTuple && get(payload, :schema, nothing) === 1 &&
         get(payload, :attempt, nothing) == string(ref.id) &&
         get(payload, :value, nothing) isa AbstractMeasurementResult ||
@@ -152,9 +161,9 @@ Constructor mappings are unnecessary; JSON configuration remains in `info(store,
 """
 function load_measurement(store::DataStore, ref::MeasurementRef)
     record = info(store, ref)
-    get(record, "julia_config_format", nothing) == "julia-serialization-v1" ||
+    get(record, "julia_config_format", nothing) == "jld2-v1" ||
         throw(ArgumentError("measurement has no supported Julia configuration payload"))
-    payload = open(deserialize, measurement_config_path(store, ref.id))
+    payload = read_native(measurement_config_path(store, ref.id))
     payload isa NamedTuple && get(payload, :schema, nothing) === 1 &&
         get(payload, :attempt, nothing) == string(ref.id) &&
         get(payload, :value, nothing) isa AbstractMeasurement ||

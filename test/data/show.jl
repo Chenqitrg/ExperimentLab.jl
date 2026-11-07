@@ -4,7 +4,7 @@
         source = test_state(store)
         captured = capture(source, [1.0, 2.0])
         saved = save_snapshot!(store, captured)
-        write(joinpath(path, "tensors", "$(saved.id).bin"), "not a valid binary payload")
+        write(joinpath(path, "tensors", "$(saved.id).jld2"), "not a valid binary payload")
         description = AD.describe(store)
         @test description.kind == "data_store"
         @test description.counts.snapshots == 1

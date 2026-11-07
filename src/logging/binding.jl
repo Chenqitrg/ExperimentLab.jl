@@ -11,15 +11,6 @@ function Base.showerror(io::IO, error::LogWriteError)
     showerror(io, error.cause)
 end
 
-# Preserve output failures wrapped by fetch/wait or @sync in measurement code.
-function is_log_failure(error)
-    error isa LogWriteError && return true
-    error isa CompositeException && return any(is_log_failure, error.exceptions)
-    error isa TaskFailedException && return any(
-        item -> is_log_failure(item.exception), Base.current_exceptions(error.task; backtrace=false))
-    return false
-end
-
 # FormatLogger handles formatting, writing and per-message flushing. This wrapper
 # supplies record identity, synchronizes writers and makes failures escape @info.
 struct RecordLogger{L,C} <: Logging.AbstractLogger

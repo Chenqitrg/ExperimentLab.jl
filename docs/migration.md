@@ -91,6 +91,36 @@ Verification: 556 ExperimentLab tests, UpdateLab and legacy AlgorithmDataLab tes
 orders, and 34 examples passed. All checks used one Julia/BLAS thread; no
 renormalization or MPS optimization was executed.
 
+## Step 4: generator execution consolidation
+
+The reviewed two-file ExecutionLab controller now lives in `src/execution/`.
+ExperimentLab owns Session, its five lifecycle states, and the five control
+exports. ResumableFunctions remains the only generator mechanism; macros are
+imported directly by algorithm authors. No ExecutionLab dependency or alias module
+is added. The three small examples and controller tests moved with the code.
+
+Session and ExecutionRef still have separate lifetimes. Explicit callbacks can
+record states, and starting a Session in `with_log` inherits that logger. Await it
+before closing the scope; finish the stored execution explicitly. Automatic
+lifecycle coordination remains a separate review step.
+
+The old ExecutionLab checkout is retained as a migration reference because domain
+callers still use its superseded run/observer/checkpoint protocol. It is retired
+from further development. Those callers were already incompatible with the
+previous generator refactor and are not rewritten by this consolidation.
+
+## Step 5: recorded Sessions
+
+`start_run(store, algorithm_ref, generator)` creates a fresh execution and owns
+its log scope through pauses and termination. Session exposes its store and
+ExecutionRef. The driver closes the log and persists the terminal outcome before
+publishing completion/cancellation; finalization failures produce FAILED and
+retain the exceptions. Unrecorded execution remains available.
+
+Progress is not automatically persisted. Callbacks can log values or explicitly
+record/capture states. Measurement scoping and disk restart remain separate.
+See [04_recorded_run.jl](../examples/execution/04_recorded_run.jl).
+
 ## Suggested next review steps
 
 Each step should be reviewed before proceeding to the next:
@@ -99,8 +129,7 @@ Each step should be reviewed before proceeding to the next:
    explicit binding introduced in step 2a. Review nested and asynchronous ownership.
 2. Review shared vocabulary for computational and laboratory experiments.
    Keep tensor types in domain packages.
-3. Consolidate execution lifecycle and review waiting, completion and failures.
-   Decide separately which interactive session controls belong here.
+3. Review the recorded Session entry point and finalization contract.
 4. Switch domain-package callers and retire the superseded package implementations.
 
 These are planned boundaries, not features implemented by this migration.

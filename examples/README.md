@@ -9,6 +9,7 @@ reads them before the scope closes, appends more, and separates a second executi
 Then follow one area at a time:
 
 - [Configuration](config/README.md): `@option`, tree construction, Accessors updates, and JSON files.
+- [Execution](execution/README.md): run, pause, and nest small generators.
 - [Data](data/README.md): snapshots, measurements, retention, provenance and trees.
 - [Events](logging/README.md): schemas, validation, codecs and inspection.
 - [Optional logging integrations](logging/integrations/README.md): external logging

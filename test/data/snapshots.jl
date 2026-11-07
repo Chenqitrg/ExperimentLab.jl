@@ -1,13 +1,15 @@
 struct BrokenPayload end
-Serialization.serialize(::Serialization.AbstractSerializer, ::BrokenPayload) = error("cannot serialize")
+JLD2.writeas(::Type{BrokenPayload}) = String
+JLD2.wconvert(::Type{String}, ::BrokenPayload) = error("cannot serialize")
 
 struct BlockIndexPublication
     root::String
 end
-function Serialization.serialize(serializer::Serialization.AbstractSerializer, value::BlockIndexPublication)
+JLD2.writeas(::Type{BlockIndexPublication}) = String
+function JLD2.wconvert(::Type{String}, value::BlockIndexPublication)
     mv(joinpath(value.root, "index.json"), joinpath(value.root, "saved-index.json"))
     mkdir(joinpath(value.root, "index.json"))
-    Serialization.serialize(serializer, "unpublished payload")
+    return "unpublished payload"
 end
 
 @testset "Snapshot copies detach storage and a capture is persisted once" begin

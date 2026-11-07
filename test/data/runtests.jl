@@ -3,7 +3,7 @@ using Test
 using ExperimentLab
 using ExperimentLab: AbstractAlgorithmConfig, @config, readconfig, writeconfig
 import JSON
-import Serialization
+import JLD2
 const AD = ExperimentLab
 
 @option struct ExampleRun <: AbstractAlgorithmConfig
@@ -21,6 +21,7 @@ end
     include("store.jl")
     include("snapshots.jl")
     include("measurements.jl")
+    include("jld2.jl")
     include("show.jl")
     include("tree_show.jl")
     include("describe.jl")

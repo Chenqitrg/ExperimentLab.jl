@@ -5,7 +5,7 @@ function check_step(step)
     return nothing
 end
 
-algorithm_path(store::DataStore, id::UUID) = joinpath(store.path, "algorithms", string(id) * ".bin")
+algorithm_path(store::DataStore, id::UUID) = joinpath(store.path, "algorithms", string(id) * ".jld2")
 
 """Register one fixed configuration. Equal configurations are never merged automatically."""
 function record_algorithm!(store::DataStore, config::AbstractAlgorithmConfig;
@@ -18,11 +18,9 @@ function record_algorithm!(store::DataStore, config::AbstractAlgorithmConfig;
     return change!(store) do document
         ref = add_record!(document, store, :algorithm; label=String(label),
             config=encoded, config_type=string(typeof(frozen)), metadata=details,
-            config_format="julia-serialization-v1", implementation=provider)
-        atomic_write(algorithm_path(store, ref.id)) do io
-            serialize(io, (; schema=1, algorithm=string(ref.id), value=frozen))
-        end
-        document["algorithms"][string(ref.id)]["julia_config"] = "algorithms/$(ref.id).bin"
+            config_format="jld2-v1", implementation=provider)
+        write_native(algorithm_path(store, ref.id), (; schema=1, algorithm=string(ref.id), value=frozen))
+        document["algorithms"][string(ref.id)]["julia_config"] = "algorithms/$(ref.id).jld2"
         return ref
     end
 end
@@ -30,9 +28,9 @@ end
 """Restore a detached algorithm configuration from trusted Julia storage."""
 function load_algorithm(store::DataStore, ref::AlgorithmRef)
     record = info(store, ref)
-    record["config_format"] == "julia-serialization-v1" ||
+    record["config_format"] == "jld2-v1" ||
         throw(ArgumentError("unsupported algorithm configuration format"))
-    payload = open(deserialize, algorithm_path(store, ref.id))
+    payload = read_native(algorithm_path(store, ref.id))
     payload isa NamedTuple && get(payload, :schema, nothing) === 1 &&
         get(payload, :algorithm, nothing) == string(ref.id) &&
         get(payload, :value, nothing) isa AbstractAlgorithmConfig ||
@@ -57,13 +55,19 @@ function record_execution!(store::DataStore, algorithm::AlgorithmRef;
     end
 end
 
-function finish_execution!(store::DataStore, execution::ExecutionRef; status::AbstractString="completed")
+function finish_execution!(store::DataStore, execution::ExecutionRef;
+        status::AbstractString="completed", exception=nothing)
     status in ("completed", "failed", "cancelled") || throw(ArgumentError("unknown final status"))
+    exception === nothing || status == "failed" ||
+        throw(ArgumentError("only failed executions can record an exception"))
+    failure = exception === nothing ? nothing :
+        Dict("type" => string(typeof(exception)), "message" => sprint(showerror, exception))
     change!(store) do document
         record = lookup(document, store, execution)
         record["status"] == "running" || throw(ArgumentError("execution already finished"))
         record["status"] = status
         record["finished"] = timestamp()
+        failure === nothing || (record["error"] = failure)
     end
     return execution
 end

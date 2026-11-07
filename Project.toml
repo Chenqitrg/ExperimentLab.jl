@@ -3,13 +3,14 @@ uuid = "29f77e63-5c80-4c5a-8fc3-cbf639322b6d"
 version = "0.1.0"
 
 [deps]
+ResumableFunctions = "c5292f4c-5179-55e1-98c5-05642aab7184"
 Configurations = "5218b696-f38b-4ac9-8b61-a12ec717816d"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 LoggingExtras = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 LoggingFormats = "98105f81-4425-4516-93fd-1664fb551ab6"
-Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [weakdeps]
@@ -19,6 +20,7 @@ MatrixAlgebraKit = "6c742aac-3347-4629-af66-fc926824e5e4"
 ExperimentLabMatrixAlgebraKitExt = "MatrixAlgebraKit"
 
 [compat]
+ResumableFunctions = "1.0.8"
 Accessors = "0.1.44"
 ConstructionBase = "1.6"
 MatrixAlgebraKit = "0.6.9"
@@ -27,6 +29,7 @@ Logging = "1"
 LoggingExtras = "1.0.3"
 LoggingFormats = "1.6"
 JSON = "1"
+JLD2 = "0.6.7"
 julia = "1.12"
 Test = "1.11"
 

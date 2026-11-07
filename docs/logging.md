@@ -86,7 +86,7 @@ The main examples import ExperimentLab; LoggingExtras and LoggingFormats are
 core dependencies used by the binding. JSON is also used by the data area.
 
 ```sh
-JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --project=. -e 'using Pkg; Pkg.test(; julia_args=["--compile=min", "-O0", "--threads=1"])'
+JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --project=. -e 'using Pkg; Pkg.test(; julia_args=["-O0", "--threads=1"])'
 ```
 
 Tests cover schema validation, nested JSON values, terminal/file routing,

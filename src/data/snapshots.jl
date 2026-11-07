@@ -11,7 +11,7 @@ copy_state(value) = deepcopy(value)
 """Copy while the producer is not mutating its input; no file is written yet."""
 capture(state::StateRef, value) = StateSnapshot(uuid4(), state, copy_state(value))
 
-payload_path(store::DataStore, id::UUID) = joinpath(store.path, "tensors", string(id) * ".bin")
+payload_path(store::DataStore, id::UUID) = joinpath(store.path, "tensors", string(id) * ".jld2")
 
 """Synchronously persist a capture. Re-saving the same retained capture is idempotent."""
 function save_snapshot!(store::DataStore, captured::StateSnapshot; metadata=(;))
@@ -25,12 +25,10 @@ function save_snapshot!(store::DataStore, captured::StateSnapshot; metadata=(;))
             record["retained"] || throw(ArgumentError("snapshot was removed; capture a new state"))
             return ref
         end
-        atomic_write(payload_path(store, captured.id)) do io
-            serialize(io, captured.value)
-        end
+        write_native(payload_path(store, captured.id), captured.value)
         add_record!(document, store, :snapshot; id=captured.id, parent=captured.state,
             metadata=encoded, retained=true, stored=true,
-            payload="tensors/$(captured.id).bin", format="julia-serialization-v1",
+            payload="tensors/$(captured.id).jld2", format="jld2-v1",
             implementation=plain_data(implementation(captured.value)))
         state["availability"] = "available"
         write_json(joinpath(store.path, "index.json"), document)
@@ -43,8 +41,8 @@ function load_snapshot(store::DataStore, ref::SnapshotRef)
     lock(store.lock) do
         record = lookup(current_index(store), store, ref)
         record["stored"] || throw(ArgumentError("snapshot payload was deliberately removed"))
-        record["format"] == "julia-serialization-v1" || throw(ArgumentError("unsupported payload format"))
-        return open(deserialize, payload_path(store, ref.id))
+        record["format"] == "jld2-v1" || throw(ArgumentError("unsupported payload format"))
+        return read_native(payload_path(store, ref.id))
     end
 end
 

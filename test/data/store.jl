@@ -59,7 +59,8 @@ end
 end
 
 @option struct UnserializableAlgorithm <: AbstractAlgorithmConfig end
-Serialization.serialize(::Serialization.AbstractSerializer, ::UnserializableAlgorithm) =
+JLD2.writeas(::Type{UnserializableAlgorithm}) = String
+JLD2.wconvert(::Type{String}, ::UnserializableAlgorithm) =
     error("algorithm serialization failed")
 mutable struct MutableAlgorithm <: AbstractAlgorithmConfig
     value::Int

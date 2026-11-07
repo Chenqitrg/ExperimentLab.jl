@@ -56,12 +56,20 @@ There is no promise to repair a partial last line after a failed write.
 `fetch`/`wait`, instead of converting them into an ordinary failed measurement
 result. The incomplete measurement remains running;
 this helper does not mark executions or measurements successful or manage their
-recovery. Lifecycle coordination remains a separate migration step.
+recovery. Recorded Sessions coordinate their own execution record separately.
 
 Julia child tasks can inherit the logger, but `with_log` is not a task supervisor.
 Use `@sync` or await/fetch tasks **inside** the scope. Task failures propagate through
 those Julia mechanisms. A task that uses the logger after the scope closes receives
 an error. Unawaited task errors cannot automatically stop a producer in another task.
+
+## Recorded Sessions
+
+`start_run(store, algorithm_ref, generator)` opens the execution log inside its
+driver Task and keeps it open through pauses. The driver closes it before marking
+a successful/cancelled execution terminal, and records failures when possible.
+Use this entry point instead of manually wrapping and finalizing a Session.
+Ordinary `with_log` scopes keep their existing explicit lifetime contract.
 
 ## Scope of this change
 

@@ -10,7 +10,7 @@
         branch = AD.record_execution!(store, b; initial_state=state, label="branch")
         for dir in ("algorithms", "tensors", "measurements")
             for file in readdir(joinpath(path, dir); join=true)
-                endswith(file, ".bin") && write(file, "unreadable payload")
+                endswith(file, ".jld2") && write(file, "unreadable payload")
             end
         end
         output = sprint(AD.showtree, store)

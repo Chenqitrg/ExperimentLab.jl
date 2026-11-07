@@ -2,7 +2,9 @@ module ExperimentLab
 
 using Dates
 using UUIDs
-using Serialization
+import ResumableFunctions
+using ResumableFunctions: @resumable, @yieldfrom
+import JLD2
 import Configurations
 import JSON
 import Logging, LoggingExtras, LoggingFormats
@@ -12,6 +14,9 @@ public ConfigError, configtree
 public config_constructor, config_fields, config_defaults, value_expression
 
 export AbstractLogEvent, EventRegistry, event_record
+
+export start_run, pause!, resume!, cancel!, run_status
+public Session, RunStatus, RUNNING, PAUSED, COMPLETED, CANCELLED, FAILED
 
 export DataStore, record_state!
 export capture, save_snapshot!, load_snapshot
@@ -45,4 +50,8 @@ abstract type AbstractLogEvent end
 include("logging/events.jl")
 include("logging/show.jl")
 include("logging/binding.jl")
+
+include("execution/session.jl")
+include("execution/driver.jl")
+include("execution/binding.jl")
 end
