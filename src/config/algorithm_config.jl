@@ -23,7 +23,7 @@ function _show_algorithm_config_fields(io, config, prefix, active=IdDict())
     end
     active[config] = nothing
     try
-        fields = fieldnames(typeof(config))
+        fields = _config_fieldnames(typeof(config))
         for (index, field) in enumerate(fields)
             islast = index == length(fields)
             branch = islast ? "└─ " : "├─ "
@@ -32,7 +32,7 @@ function _show_algorithm_config_fields(io, config, prefix, active=IdDict())
             print(io, prefix, branch, field, ": ")
             if value isa AbstractAlgorithmConfig
                 print(io, _algorithm_config_name(value))
-                if isempty(fieldnames(typeof(value)))
+                if isempty(_config_fieldnames(typeof(value)))
                     println(io, "()")
                 else
                     println(io)
@@ -51,7 +51,7 @@ end
 
 function _show_config_summary(io, config)
     print(io, _algorithm_config_name(config))
-    print(io, isempty(fieldnames(typeof(config))) ? "()" : "(...)")
+    print(io, isempty(_config_fieldnames(typeof(config))) ? "()" : "(...)")
     return nothing
 end
 

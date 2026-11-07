@@ -28,14 +28,20 @@ end
 """Return the keyword constructor for tree interchange; unrelated to Accessors updates."""
 config_constructor(config::AbstractAlgorithmConfig) = Base.typename(typeof(config)).wrapper
 
-"""Return tree constructor keywords. Override when these differ from stored fields."""
-config_fields(config::AbstractAlgorithmConfig) =
-    NamedTuple{fieldnames(typeof(config))}(ntuple(i -> getfield(config, i), fieldcount(typeof(config))))
+# Reflect describes serialization identity, not an algorithm parameter.
+_config_fieldnames(::Type{T}) where {T<:AbstractAlgorithmConfig} =
+    filter(name -> fieldtype(T, name) !== Configurations.Reflect, fieldnames(T))
+
+"""Return tree constructor keywords, excluding Reflect metadata. Override for derived fields."""
+function config_fields(config::AbstractAlgorithmConfig)
+    names = _config_fieldnames(typeof(config))
+    return NamedTuple{names}(map(name -> getfield(config, name), names))
+end
 
 """Explicit constructor defaults used only for compact output. Unknown defaults are retained."""
 function config_defaults(::Type{T}) where {T<:AbstractAlgorithmConfig}
     Configurations.is_option(T) || return NamedTuple()
-    return (; (name => value for name in fieldnames(T)
+    return (; (name => value for name in _config_fieldnames(T)
         for value in (Configurations.field_default(T, name),)
         if value !== Configurations.no_default && !(value isa Configurations.PartialDefault))...)
 end

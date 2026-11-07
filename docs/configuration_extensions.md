@@ -23,6 +23,37 @@ interchange, not a replacement for native checkpoints. Arbitrary Julia objects
 need an explicit upstream conversion; plain Julia structs can still use tree
 construction/display without opting into JSON.
 
+## Explicit type identity in JSON
+
+Use Configurations' `Reflect` field when a configuration node must identify its
+strategy to readers that do not already know its Julia type:
+
+```julia
+@option "MyPackage.DirectMethod" struct DirectMethod <: AbstractAlgorithmConfig
+    type::Reflect
+end
+
+writeconfig(stdout, DirectMethod())
+# {"type":"MyPackage.DirectMethod"}
+```
+
+`Reflect` is a zero-size serialization marker with an automatic default. Users
+do not supply it when constructing or updating parameters. ExperimentLab omits
+it from editable trees, tree defaults and display, including fallback display.
+An ordinary parameter named `type` is unaffected. Inner constructors must accept
+and preserve the marker along with their other stored fields so Configurations
+and Accessors can reconstruct the value.
+
+Add the marker to each nested option type whose identity must appear in JSON.
+The alias above is for a non-parametric type; without an alias, `Reflect` emits
+the full Julia type name, including concrete type parameters. Reading still
+uses `readconfig(path, T)` with a concrete type. Keep the default
+`include_defaults=true` when exporting these identities: Configurations may
+omit the marker along with other defaults when `include_defaults=false`.
+
+This is opt-in. Existing option types without a marker still serialize only
+their parameter fields; ExperimentLab does not inject a second type schema.
+
 ## Validation and updates
 
 Keep validation in positional inner constructors. `@option` supplies keyword
