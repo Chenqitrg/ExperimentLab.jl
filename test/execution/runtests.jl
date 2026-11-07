@@ -1,5 +1,6 @@
 include("ownership.jl")
 include("generator_sessions.jl")
+include("describe.jl")
 include("integration.jl")
 include("recorded_sessions.jl")
 @testset "execution method ambiguities" begin

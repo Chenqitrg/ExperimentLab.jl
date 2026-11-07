@@ -50,6 +50,19 @@ Startup publishes the Task handle under the condition lock before the first
 advance. No Session method starts a replacement Task. The generator is owned by
 one Session and must not be manually advanced concurrently.
 
+## Live inspection
+
+`ExperimentLab.describe(session)` returns JSON-ready metadata without waiting for
+completion or reading disk. `status` is the acknowledged state; `request` is the
+latest control request, so `"running"` with `"pause"` is possible. Terminal status
+takes precedence over any remaining request. `result_available` means `fetch` can
+return a successful final result; the payload itself is omitted. Failures include
+an error type and message, without a stack trace.
+
+Recorded sessions also include the store identity/path and execution reference.
+Use `describe(store, session.execution)` separately for the persisted tree. Its
+status can differ during a live pause or after a storage failure.
+
 ## Recorded sessions
 
 The advancement loop returns a terminal outcome to the driver; it no longer

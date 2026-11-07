@@ -1,85 +1,174 @@
 # ExperimentLab
 
-Julia infrastructure for experiments: configuration, execution, data and logs
-share one package. Numerical algorithms, tensor types and instrument drivers
-belong in applications or domain packages above it.
+ExperimentLab connects an algorithm's **configuration, execution, saved data and
+logs** in Julia. It helps you answer: *What settings produced this result? Which
+run and step did it come from? Where are its data and logs?*
 
-**Current stage: configuration, generator execution, data storage and record-bound logs.**
-Configurations.jl supplies `@option` and dictionary conversion. ResumableFunctions
-supplies generator mechanics; ExperimentLab controls their background sessions.
-Execution and measurement records own log paths; `ExperimentLab.with_log` binds
-ordinary Julia messages to one record. `start_run(store, algorithm, generator)`
-creates an execution record, owns its log scope, and writes its terminal outcome.
-`start_run(generator)` remains available for execution without storage.
+You supply the numerical algorithm and measurement definitions. ExperimentLab
+provides the surrounding workflow, with no dependency on tensor or MPS packages.
+It is under active development; the API and storage format may change.
 
-## Start reviewing
+## Quick start
 
-1. For configuration, start with [00_define_options.jl](examples/config/00_define_options.jl)
-   and the [configuration walkthrough](examples/config/README.md).
-   For execution, start with [01_run.jl](examples/execution/01_run.jl), then
-   [pause](examples/execution/02_pause.jl) and [nest](examples/execution/03_nested.jl).
-   [04_recorded_run.jl](examples/execution/04_recorded_run.jl) adds automatic logs and a stored run.
-   For data and events, run [01_data_and_events.jl](examples/01_data_and_events.jl). It uses a short
-   vector and leaves every variable available in the REPL.
-   Then run [02_execution_logs.jl](examples/02_execution_logs.jl) for the new binding.
-2. Read [src/ExperimentLab.jl](src/ExperimentLab.jl): a single module includes
-   `config/`, `execution/`, `data/`, and `logging/`; these are internal directories in one module.
-3. Read [the migration notes](docs/migration.md) to distinguish moved code from
-   actual changes. The detailed [data](docs/data.md) and [event](docs/logging.md)
-   reference guides preserve the existing behavior.
+Requires Julia 1.12 or later. From this checkout, instantiate the environment:
 
-Run the complete example directly in VS Code, or:
-
-```julia
-include("examples/01_data_and_events.jl")
-display(store)
-restored
-diagnostic
+```sh
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=.
 ```
 
-The first line activates and instantiates the examples environment. For selected
-code execution, run setup and imports first. No variables are hidden in a module.
-See [examples/README.md](examples/README.md) for the individual feature examples.
+Paste the following into that Julia REPL. This small calculation adds the numbers
+1 through 3, saves each partial sum, and writes a log associated with the run.
 
-## Current responsibilities
+```julia
+using ExperimentLab, ResumableFunctions
+using Configurations: @option
 
-| Area | Responsibilities |
-| --- | --- |
-| `src/config/` | Tree construction and display, defaults from Configurations, JSON files |
-| `src/execution/` | One generator driver Task, controls, results, and optional record/log ownership |
-| `src/data/` | Reference ownership, snapshots, measurements, retention, native and JSON storage, inspection |
-| `src/logging/` | Event schemas, record-bound file scopes, identity, synchronization and error propagation |
-| Julia Logging and external logging libraries | Message emission, filtering, formatting and output |
+@option struct SumSettings <: AbstractAlgorithmConfig
+    steps::Int = 3
+end
 
-`ExperimentLab.describe` is one qualified function with methods for stores,
-references, captures and event registries. Everyday exports are the existing
-data operations, `AbstractLogEvent`, `EventRegistry`, `event_record`, and the four
-configuration entries: `AbstractAlgorithmConfig`, `@config`, `readconfig`, `writeconfig`.
-Execution exports are `start_run`, `pause!`, `resume!`, `cancel!`, and `run_status`.
-`Session`, status constants, record coordination and inspection remain qualified.
-See [execution controls](docs/execution.md) and [session lifecycle](docs/session_lifecycle.md).
+@resumable function partial_sums(settings::SumSettings)
+    total = 0
+    @info "Calculation started" steps=settings.steps
+    for step in 1:settings.steps
+        total += step
+        @yield (step=step, total=total)
+    end
+    return total
+end
 
-There is no new experiment object, scheduler, compatibility wrapper or tensor
-dependency. A small internal logger wraps the library sink to attach identity and
-propagate output failures. The existing `AlgorithmRef`
-and `ExecutionRef` vocabulary remains until its own review step. Storage operations
-are synchronous; applications decide when to capture states and wait for Sessions.
+settings = SumSettings()
+store = DataStore(mktempdir()) # Temporary demo directory; use a lasting path for real data.
+algorithm = ExperimentLab.record_algorithm!(store, settings; label="partial sums")
 
-## Verification
+session = start_run(store, algorithm, partial_sums(settings);
+    onstep=(session, progress) -> begin
+        state = record_state!(store, session.execution; step=progress.step)
+        save_snapshot!(store, capture(state, progress.total))
+        @info "Step completed" step=progress.step total=progress.total
+    end)
+
+fetch(session) # 6; waits for completion, including log closure and record updates.
+ExperimentLab.showtree(store)
+
+record = ExperimentLab.info(store, session.execution)
+println(read(joinpath(store.path, record["log_path"]), String))
+```
+
+`@option` defines the configuration type. `@resumable` and `@yield` turn your
+calculation into a generator that reports progress at points you choose.
+ExperimentLab advances it in a Julia Task and calls `onstep` for each yielded value.
+The final `return` value is obtained with `fetch(session)`.
+
+Saving is explicit: `record_state!` creates metadata, `capture` makes an independent
+copy, and `save_snapshot!` writes it to disk. Yielding a value alone does not save it.
+To run without records or files, use `start_run(partial_sums(settings))`.
+
+## How the pieces fit
+
+A **Session** is a live, in-memory controller for one running generator. A **Ref**
+identifies a stored record. A **DataStore** is the directory containing those
+records, payloads and logs. A Session started with a store exposes its run as
+`session.execution`.
+
+Stored records form an ownership tree:
+
+```text
+DataStore
+└─ AlgorithmRef                 configuration registered once
+   ├─ ExecutionRef              one run using that configuration
+   │  ├─ StateRef               state produced at a particular step
+   │  │  ├─ SnapshotRef         saved copy of that state
+   │  │  └─ MeasurementRef      measurement configuration, outcome and result
+   │  └─ StateRef               another step
+   └─ ExecutionRef              another run using the same configuration
+```
+
+Each execution and measurement has its own log path. Logs belong to those records;
+they are not additional tree nodes. A run can also refer to an earlier state as
+its input, and a measurement can refer to a saved snapshot. These are cross-links,
+so the ownership tree remains unambiguous.
+
+| Part | What you use it for | Start here |
+| --- | --- | --- |
+| Configuration | Define typed settings, construct nested values with `@config`, read/write JSON | [Configuration walkthrough](examples/config/README.md) |
+| Execution | Start a generator, pause/resume/cancel at its boundaries, obtain its final result | [Minimal run](examples/execution/01_run.jl) |
+| Data | Save selected states, run measurements, restore typed Julia results, inspect their origin | [Snapshots](examples/data/01_snapshots.jl), [measurements](examples/data/02_measurements.jl) |
+| Logging | Associate ordinary `@info` messages with a run or measurement; optionally validate structured events | [Recorded run](examples/execution/04_recorded_run.jl), [event schemas](examples/logging/01_structured_events.jl) |
+
+### Configuration and measurements
+
+Define settings with `Configurations.@option`. Ordinary constructors work, and
+`@config` provides a tree-shaped alternative. For the type above:
+
+```julia
+settings = @config """
+SumSettings
+└─ steps: 5
+"""
+```
+
+A measurement supplies a configuration subtype of `AbstractMeasurement`, a result
+subtype of `AbstractMeasurementResult`, and a `measure(definition, input)` method.
+`measure!` records the attempt, opens its log, runs that method, and saves the
+outcome. It accepts a current state or an existing snapshot. `load_result` restores
+the Julia result type; `ExperimentLab.load_result_data` reads its JSON representation.
+See the [complete measurement example](examples/data/02_measurements.jl).
+
+### Control, storage and inspection
+
+- `pause!`, `resume!` and `cancel!` control a Session at generator boundaries.
+  Pausing keeps the Julia process and Task alive. Saved snapshots do not serialize
+  the generator's execution position. See [session lifecycle](docs/session_lifecycle.md).
+- Configuration objects, snapshots and typed results use **JLD2**. The index and
+  portable measurement results use **JSON**; logs use **JSON Lines**. Native loading
+  requires the defining Julia types in a compatible environment.
+- `start_run(store, algorithm, generator)` owns the execution log automatically.
+  `measure!` temporarily selects its own measurement log, then restores the caller's
+  logger. Every message is flushed; output failures propagate. See [log ownership](docs/log-binding.md).
+- Storage and measurement calls are synchronous. Applications choose when to save
+  and how to schedule background work. Use one coordinated `DataStore` writer per
+  directory, and await child tasks before leaving their log scope.
+- `ExperimentLab.showtree(store)` displays the stored relationships.
+  `ExperimentLab.describe(store)` returns JSON-ready metadata without loading
+  numerical payloads. `ExperimentLab.describe(session)` reports live status and
+  storage identity without waiting for completion.
+
+## Review and explore
+
+Start with [execution/01_run.jl](examples/execution/01_run.jl), then
+[execution/04_recorded_run.jl](examples/execution/04_recorded_run.jl) to see what
+adding storage changes. Continue with [data/01_snapshots.jl](examples/data/01_snapshots.jl)
+and [data/02_measurements.jl](examples/data/02_measurements.jl). Review nested
+configuration and structured events independently when you need them.
+
+Examples can be run as whole files in VS Code or with `include`. Their setup
+activates the examples environment. For selected execution, run setup and imports
+first; the main walkthroughs leave variables available for REPL inspection.
+The [example index](examples/README.md) lists the remaining features.
+
+For source review, [src/ExperimentLab.jl](src/ExperimentLab.jl) includes four areas
+in one module. Each area's entry file lists its API and implementation files:
+[config](src/config/config.jl), [data](src/data/data.jl),
+[logging](src/logging/logging.jl), [execution](src/execution/execution.jl).
+Names marked `export` are imported by `using ExperimentLab`; names marked `public`
+are supported APIs accessed with the `ExperimentLab.` prefix.
+
+ExperimentLab builds on Configurations for defaults and dictionary conversion,
+ResumableFunctions for generator mechanics, Julia Tasks for scheduling, JLD2 for
+native storage, and Julia Logging with LoggingExtras/LoggingFormats for log output.
+The package connects these facilities through record ownership and lifecycle rules.
+[Migration notes](docs/migration.md) document the earlier package consolidation.
+
+## Tests
+
+From the repository root:
 
 ```sh
 JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --project=. -e 'using Pkg; Pkg.test(; julia_args=["-O0", "--threads=2"])'
 ```
 
-Configuration, execution, data, and logging tests live in separate directories. Package-boundary
-tests additionally verify that ExperimentLab loads none of the retired configuration/data/log packages,
-ExecutionLab nor TensorKit. LoggingExtras and LoggingFormats are now direct
-dependencies used for bound log output. Tests use tiny inputs, including injected
-write/flush failures and overlapping log scopes.
-
-## Configuration definitions
-
-Define stored algorithm and measurement configurations with `Configurations.@option`
-(and the appropriate abstract supertype). Their readable metadata contains the
-plain nested dictionary from Configurations.jl, without constructor registries.
-`load_algorithm` and `load_measurement` still restore native Julia values.
+Tests cover configuration, storage, log ownership and failures, cooperative and
+threaded execution, and package boundaries. They use small inputs and do not run
+MPS or LoopTNR calculations.

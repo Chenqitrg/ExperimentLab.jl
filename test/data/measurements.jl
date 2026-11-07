@@ -31,6 +31,7 @@ AD.result_data(result::AdaptedComplexResult) = (real=real(result.value), imag=im
         source = test_state(store; label="produced tensor")
         input = [3.0, 1.0, 2.0]
         first_attempt = measure!(store, SmallestValues(), input; state=source)
+        @test isempty(read(joinpath(path, AD.info(store, first_attempt)["log_path"]), String))
         @test seen_input[] === input
         @test input == [3.0, 1.0, 2.0]
         @test AD.info(store, source)["availability"] == "never_persisted"

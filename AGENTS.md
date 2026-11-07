@@ -6,5 +6,5 @@
 - This package owns experiment infrastructure; tensor and domain algorithms belong above it.
 - Reuse Julia Logging and maintained logging libraries for generic logging mechanics.
 - Keep examples at top level and runnable from VS Code and the REPL.
-- Current stage: configuration, generator execution, data storage, event schemas and explicit log scopes. Recorded sessions bind execution logs and terminal records automatically; automatic measurement scoping remains a later stage.
+- Current stage: configuration, generator execution, data storage, event schemas and record-bound logs. Recorded sessions bind execution logs and terminal records automatically; measure! owns a separate measurement log scope.
 - Bound logs append and flush every message; output errors must propagate through Julia Logging and measurement dispatch.

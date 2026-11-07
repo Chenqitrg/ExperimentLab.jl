@@ -1,3 +1,6 @@
+"""Base type for immutable, explicitly registered diagnostic event structs."""
+abstract type AbstractLogEvent end
+
 """
     EventRegistry("stable.event.v1" => EventType, ...; codecs=())
 

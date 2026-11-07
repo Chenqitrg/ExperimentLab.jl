@@ -59,7 +59,7 @@ there is no terminal fallback. Return `f()`'s result and restore the prior logge
 The file is created on entering the scope, even when there are no messages.
 Use one coordinated store writer. Await child tasks (for example with `@sync`)
 inside the scope: this function closes the file on exit and is not a task manager.
-It neither changes activity status nor automatically binds `measure!` to a new log.
+It does not change activity status. `measure!` uses this scope automatically.
 """
 function with_log(f, store::DataStore, ref::LogOwner)
     relative = info(store, ref)["log_path"]

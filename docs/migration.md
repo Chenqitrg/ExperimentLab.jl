@@ -125,8 +125,8 @@ See [04_recorded_run.jl](../examples/execution/04_recorded_run.jl).
 
 Each step should be reviewed before proceeding to the next:
 
-1. Automatically establish measurement log scopes inside `measure!`, using the
-   explicit binding introduced in step 2a. Review nested and asynchronous ownership.
+1. Review the automatic measurement log scopes now used by `measure!`, including
+   nested and awaited asynchronous ownership (see [record-bound logs](log-binding.md)).
 2. Review shared vocabulary for computational and laboratory experiments.
    Keep tensor types in domain packages.
 3. Review the recorded Session entry point and finalization contract.

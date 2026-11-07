@@ -13,6 +13,7 @@ struct EigenvalueResult <: AbstractMeasurementResult
     levels::Vector{Float64}
 end
 function ExperimentLab.measure(config::EigenvalueMeasurement, matrix)
+    @info "Computing eigenvalues" count=config.count
     config.count > 0 || throw(ArgumentError("count must be positive"))
     levels = eigvals(Hermitian(matrix))
     EigenvalueResult(levels[1:min(config.count, length(levels))])
@@ -32,6 +33,9 @@ result = load_result(store, attempt)
 @show eltype(result.levels) # Float64
 @show result.levels # Approximately [1.0, 3.0].
 @show ExperimentLab.info(store, state)["availability"] # "never_persisted"
+# measure! automatically owns a separate log for this attempt.
+logpath = joinpath(store.path, ExperimentLab.info(store, attempt)["log_path"])
+println(read(logpath, String)) # JSON Lines; owner.id identifies this measurement.
 
 # 3. Different parameters create another attempt; the previous result remains.
 second = measure!(store, EigenvalueMeasurement(count=1), matrix; state)

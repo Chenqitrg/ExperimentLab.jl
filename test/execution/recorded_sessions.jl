@@ -24,6 +24,26 @@ end
     end
 end
 
+@testset "Recorded callbacks keep measurement logs separate (threaded=$threaded)" for threaded in (false, true)
+    mktempdir() do path
+        store = DataStore(path)
+        algorithm = ExperimentLab.record_algorithm!(store, TrackedSettings())
+        session = start_run(store, algorithm, tracked_count(1, Ref(false)); threaded,
+            onstep=(s, step) -> begin
+                state = record_state!(store, s.execution; step)
+                measure!(store, LoggedMeasurement(), [1.0]; state)
+                @info "Back in callback"
+            end)
+        @test fetch(session) == 1
+        @test getindex.(log_lines(log_file(store, session.execution)), "msg") ==
+            ["Started", "Back in callback", "Finished"]
+        attempt = only(ExperimentLab.records(store, :measurement))
+        row = only(log_lines(log_file(store, attempt)))
+        @test row["owner"]["id"] == string(attempt.id)
+        @test row["msg"] == "Measuring"
+    end
+end
+
 @testset "Recorded sessions (threaded=$threaded)" for threaded in (false, true)
     mktempdir() do path
         store = DataStore(path)
@@ -45,6 +65,12 @@ end
         @test record["label"] == "first run"
         @test record["provenance"]["host"] == "test"
         @test record["status"] == "running"
+        description = ExperimentLab.describe(session)
+        @test description.status == "paused"
+        @test description.store.id == string(store.id)
+        @test description.store.path == store.path
+        @test description.execution.id == string(execution.id)
+        @test JSON.parse(JSON.json(description))["execution"]["kind"] == "execution"
         logfile = joinpath(path, record["log_path"])
         rows = JSON.parse.(readlines(logfile))
         @test [r["msg"] for r in rows] == ["Started", "Step"]

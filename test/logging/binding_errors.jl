@@ -11,9 +11,16 @@ Base.write(io::FaultLogIO, bytes::Vector{UInt8}) =
     io.mode === :write ? error("forced write failure") : write(io.buffer, bytes)
 Base.flush(io::FaultLogIO) = io.mode === :flush ? error("forced flush failure") : nothing
 
-@option struct AsyncLoggedMeasurement <: AbstractMeasurement end
-function ExperimentLab.measure(::AsyncLoggedMeasurement, input)
-    @sync @async @info "Async measurement"
+@option struct BrokenLogMeasurement <: AbstractMeasurement
+    asynchronous::Bool = false
+end
+function ExperimentLab.measure(config::BrokenLogMeasurement, input)
+    close(current_logger().sink.stream)
+    if config.asynchronous
+        @sync @async @info "Cannot write"
+    else
+        @info "Cannot write"
+    end
     return LoggedResult()
 end
 
@@ -44,14 +51,17 @@ end
             @test_throws CompositeException with_logger(logger) do
                 @sync @async @info "Background failure"
             end
-            # Infrastructure failure must not become an ordinary failed-result return.
-            @test_throws ExperimentLab.LogWriteError with_logger(logger) do
-                measure!(store, LoggedMeasurement(), [1.0]; state)
-            end
-            @test_throws CompositeException with_logger(logger) do
-                measure!(store, AsyncLoggedMeasurement(), [1.0]; state)
-            end
         end
+        # measure! owns its logger now; fail that stream, not the outer logger.
+        outer = current_logger()
+        @test_throws ExperimentLab.LogWriteError measure!(store, BrokenLogMeasurement(), [1.0]; state)
+        @test_throws CompositeException measure!(store, BrokenLogMeasurement(asynchronous=true), [1.0]; state)
+        @test current_logger() === outer
+        # An open failure must escape before calling the scientific calculation.
+        rm(joinpath(directory, "logs"); recursive=true)
+        write(joinpath(directory, "logs"), "blocked")
+        @test_throws Base.IOError measure!(store, LoggedMeasurement(), [1.0]; state)
+        rm(joinpath(directory, "logs"))
         @test all(ExperimentLab.info(store, ref)["status"] == "running"
                   for ref in ExperimentLab.records(store, :measurement))
 

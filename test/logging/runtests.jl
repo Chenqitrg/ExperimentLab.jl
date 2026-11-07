@@ -9,5 +9,6 @@ import LoggingFormats, JSON
     include("integration.jl")
     include("show.jl")
     include("binding.jl")
+    include("measurement_scopes.jl")
     include("binding_errors.jl")
 end

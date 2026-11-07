@@ -39,6 +39,7 @@ end
     threaded::Bool = false
 end
 function ExperimentLab.measure(config::SessionLoggedMeasurement, input)
+    close(current_logger().sink.stream)
     fetch(start_run(logged_steps(); threaded=config.threaded))
     return LoggedResult()
 end
@@ -50,11 +51,8 @@ end
             algorithm = ExperimentLab.record_algorithm!(store, LogSettings())
             run = ExperimentLab.record_execution!(store, algorithm)
             state = record_state!(store, run; step=0)
-            logger = ExperimentLab.record_logger(FaultLogIO(:write, IOBuffer()), store, run)
             failure = try
-                with_logger(logger) do
-                    measure!(store, SessionLoggedMeasurement(; threaded), nothing; state)
-                end
+                measure!(store, SessionLoggedMeasurement(; threaded), nothing; state)
             catch err
                 err
             end

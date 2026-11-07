@@ -96,18 +96,22 @@ end
 Measure synchronously and retain a new attempt. Ordinary calculation exceptions
 produce failed records. Interrupts, encoding errors and storage errors propagate.
 The input is not copied or saved; the measurement must treat it as read-only.
+Messages belong to the new attempt's log, even inside a recorded Session.
+Await child tasks before returning. The log closes before publishing the outcome.
 """
 function measure!(store::DataStore, definition::AbstractMeasurement, input;
         state::StateRef, kwargs...)
     ref = start_measurement!(store, definition, state; kwargs...)
-    result = try
-        measure(definition, input)
-    catch error
-        must_rethrow_measurement(error) && rethrow()
-        return fail_measurement!(store, ref, error)
+    succeeded, value = with_log(store, ref) do
+        try
+            return (true, measure(definition, input))
+        catch error
+            must_rethrow_measurement(error) && rethrow()
+            return (false, error)
+        end
     end
-    # Encoding/persistence is deliberately outside the calculation-failure catch.
-    return finish_measurement!(store, ref, result)
+    # Log lifecycle and persistence stay outside the calculation-failure catch.
+    return succeeded ? finish_measurement!(store, ref, value) : fail_measurement!(store, ref, value)
 end
 
 measure!(store::DataStore, definition::AbstractMeasurement, captured::StateSnapshot; kwargs...) =

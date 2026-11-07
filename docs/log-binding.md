@@ -71,14 +71,21 @@ a successful/cancelled execution terminal, and records failures when possible.
 Use this entry point instead of manually wrapping and finalizing a Session.
 Ordinary `with_log` scopes keep their existing explicit lifetime contract.
 
-## Scope of this change
+## Measurements
 
-The public addition is one qualified function, `ExperimentLab.with_log`.
-`measure!` does not yet automatically establish its own measurement log scope;
-within a run scope its messages still belong to that run. For explicit measurement
-ownership, use `start_measurement!`, wrap the calculation in `with_log(store, attempt)`,
-then publish the result with `finish_measurement!`. Automatic measurement scoping is
-the next small review step.
+`measure!` creates an attempt and automatically opens its own log around `measure`.
+Messages from the calculation and its awaited child tasks belong to that attempt,
+even inside a recorded Session. On exit, the surrounding execution logger is
+restored. Measurement messages are not duplicated in the execution log; follow
+the StateRef's measurement children and their `log_path` to find them.
+
+The log closes before either completion or ordinary calculation failure is
+published. Even a calculation with no messages creates an empty log. Opening,
+writing, flushing and closing errors propagate; incomplete attempts remain
+running for an external coordinator to inspect. No synthetic log events are added.
+
+For an external coordinator, `start_measurement!`, `with_log(store, attempt)` and
+`finish_measurement!` remain available as explicit operations.
 
 LoggingExtras and LoggingFormats are now direct dependencies because the package
 actually writes bound logs. Event/result encoding contracts have not changed.

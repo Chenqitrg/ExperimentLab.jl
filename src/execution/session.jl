@@ -124,3 +124,24 @@ function Base.show(io::IO, session::Session)
     print(io, "Session(status=", run_status(session), ")")
 end
 Base.show(io::IO, ::MIME"text/plain", session::Session) = show(io, session)
+
+"""
+    ExperimentLab.describe(session)
+
+Return JSON-ready live status, pending control request, and storage identity.
+Does not wait for completion, read disk, or include the generator or result payload.
+Use `describe(store, session.execution)` for the persisted ownership tree.
+"""
+function describe(session::Session)
+    status, request, failure = lock(session.condition) do
+        (session.status, session.request, session.failure)
+    end
+    store = session.store
+    execution = session.execution
+    error = failure === nothing ? nothing :
+        (; type=string(typeof(failure.ex)), message=sprint(showerror, failure.ex))
+    return (; schema=1, kind="session", status=lowercase(string(status)),
+        request=lowercase(string(request)), result_available=status == COMPLETED, error,
+        store=store === nothing ? nothing : (; id=string(store.id), path=store.path),
+        execution=execution === nothing ? nothing : describe(execution))
+end
