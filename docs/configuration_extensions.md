@@ -72,9 +72,8 @@ no serialization fields or display exceptions. Unregistered nodes remain plain
 parameter dictionaries; registering one subtree does not identify the rest of
 an application automatically.
 
-The domain packages register every production configuration: UpdateLab (2),
-TensorLinearSolveLab (4), PMPSLab (3),
-MPSSplitLab (12), and LoopTNRLab (2). Parent packages compose their dependencies'
+The domain packages register every production configuration: LatticeIteratorLab (2),
+TensorLinearSolveLab (4), PMPSLab (15), and LoopTNRLab (2). Parent packages compose their dependencies'
 registries. ExperimentLab does not depend on those packages. Stored algorithm
 and measurement records use the same representation as `writeconfig`.
 

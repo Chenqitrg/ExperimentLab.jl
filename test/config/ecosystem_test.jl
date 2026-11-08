@@ -1,10 +1,10 @@
 using ExperimentLab: configtree
-# Run in the sibling ecosystem environment; deliberately not a core test dependency.
+# Run with the sibling LoopTNRLab project; deliberately not a core test dependency.
 using Test, ExperimentLab
-using GaugeFixingLab, MPSSplitLab, LoopTNRLab, TransferEnvironmentsLab
+using PMPSLab, LoopTNRLab
 using TensorKit: MatrixAlgebraKit
-using UpdateLab, TensorLinearSolveLab
-using JSON
+using LatticeIteratorLab, TensorLinearSolveLab
+using ExperimentLab: JSON
 
 @testset "real configuration full and compact round trips" begin
     for original in (ProjectorGaugeFix(), TruncatedTransferPolicy(),
