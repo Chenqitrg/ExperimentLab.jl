@@ -8,9 +8,8 @@ ExperimentLab owns the implementations directly and depends on neither package.
 The original directories initially remained as migration checkpoints, not
 compatibility layers in ExperimentLab. AlgorithmLogLab has since been retired
 and its local directory removed: no other package depends on it, and its event
-implementation, tests, and examples are owned here. AlgorithmDataLab remains
-while its domain callers await migration. Do not make parallel feature changes
-in the remaining duplicate data implementations.
+implementation, tests, and examples are owned here. AlgorithmDataLab was retained
+until its domain callers migrated; the remaining retirement is recorded below.
 
 | Original | Destination | Changes to review |
 | --- | --- | --- |
@@ -104,10 +103,10 @@ record states, and starting a Session in `with_log` inherits that logger. Await 
 before closing the scope; finish the stored execution explicitly. Automatic
 lifecycle coordination remains a separate review step.
 
-The old ExecutionLab checkout is retained as a migration reference because domain
-callers still use its superseded run/observer/checkpoint protocol. It is retired
-from further development. Those callers were already incompatible with the
-previous generator refactor and are not rewritten by this consolidation.
+At this stage the old ExecutionLab checkout remained as a migration reference.
+Domain callers still used its superseded run/observer/checkpoint protocol and
+were already incompatible with the generator refactor. Their subsequent migration
+is recorded below.
 
 ## Step 5: recorded Sessions
 
@@ -130,6 +129,83 @@ Each step should be reviewed before proceeding to the next:
 2. Review shared vocabulary for computational and laboratory experiments.
    Keep tensor types in domain packages.
 3. Review the recorded Session entry point and finalization contract.
-4. Switch domain-package callers and retire the superseded package implementations.
+4. Review the migrated domain generators and numerical snapshot storage described below.
 
 These are planned boundaries, not features implemented by this migration.
+
+## Step 6: retire duplicate packages and migrate domain callers
+
+The AlgorithmDataLab and ExecutionLab directories have been removed from the
+sibling workspace. Their Git histories remain in the local Trash. Active Lab
+projects, sources and examples now use ExperimentLab; historical plans retain
+their original names. No compatibility modules or old checkpoint readers remain.
+
+- MPSSplitLab exposes `split_steps(state)`, which yields its existing SiteLog.
+  The old SplitRun wrapper and execution extension are gone. Numerical snapshot
+  validation and cache reconstruction now belong to `snapshot`/`restore_split`
+  in MPSSplitLab, while ExperimentLab stores the resulting values.
+- LoopTNRLab exposes `tnr_steps(run)` around its numerical RG stepper. Its active
+  split is a SplitState, and its measurement interfaces come from ExperimentLab.
+  Old observer dispatch and generic checkpoint registration have been removed.
+- Both use ordinary `start_run(...; onstep=(session, value) -> ...)`, including
+  recorded sessions. Pause/resume remains in memory. Restart from saved numerical
+  data creates a new generator and Session; Task/generator serialization is absent.
+- Domain examples use tiny inputs and leave variables available in the REPL.
+  Dependency manifests are refreshed after removing the retired packages.
+
+The fresh-process restart test also exposed an unstable type check: Julia's
+ordinary type display changes when names are imported into Main. Stored algorithm,
+measurement and result type labels now use fully qualified names, independent of
+the caller's imports.
+
+Package versions are unchanged.
+
+Validation for this migration: ExperimentLab 822 assertions, MPSSplitLab 660,
+and LoopTNRLab 514 pass. Both updated domain examples run independently. The
+LoopTNR storage test restores a nested split boundary in a fresh Julia process.
+MPSSplitLab source (including its former extension) shrank from 1,085 to 950
+lines; LoopTNRLab source shrank from 1,595 to 1,414 lines.
+
+## Step 7: remove split-owned diagnostic history
+
+The domain migration now uses ExperimentLab beyond the Session wrapper:
+
+- `SplitLog`, `SiteLog`, `SweepLog` and their history/replay machinery are removed.
+  `SplitResult` contains `mps` and fixed-size `progress`; old tuple returns are gone.
+- Split updates use a registered `mps.split.update.v1` event schema. The generator
+  emits Julia log messages; recorded Sessions own the JSONL history and identity.
+- Ordinary `split` uses the same ExperimentLab driver as controlled execution.
+- `capture(ref, state)` dispatches to the domain `copy_state` method, producing a
+  minimal numerical snapshot with one tensor copy. The separate public snapshot
+  call is gone. `restore_split(saved, target)` uses the saved configuration.
+- Convergence retains the previous selected error and a comparison counter, not
+  all sweep errors. Restart rebuilds caches without replaying diagnostic history.
+- LoopTNR now stores split summaries rather than nested site histories and uses
+  direct capture as well. Its redundant MeasurementHistory wrapper is removed;
+  outer RG measurements and RG history still remain in the domain package.
+
+No compatibility aliases or package version changes are introduced.
+
+Step 7 validation: MPSSplitLab 702 assertions and LoopTNRLab 497 assertions pass,
+including fresh-process restoration. Updated numerical and recorded examples run.
+MPSSplitLab now has 809 source lines; LoopTNRLab has 1,386. Across steps 6 and 7,
+the two packages contain 485 fewer source lines than before migration.
+
+## Step 8: compose LoopTNR directly from split and experiment services
+
+LoopTNR now delegates site iteration through `@yieldfrom MPSSplitLab.split_steps`.
+Its phase enum, manual stepping protocol, result container, log history and
+measurement history are removed. The result is `(cell, completed_rg)`; measurements
+use `ExperimentLab.measure!` in the application's callback. Normalization remains
+a numerical LoopTNR setting.
+
+`capture(ref, state)` stores a minimal TNRSnapshot containing the configuration,
+committed cell, completed RG count and an optional MPSSplitLab snapshot. Restore
+with `LoopTNRLab.restore_tnr(saved)`. No logs, measurement history, generators or
+caches are included, and the split target is derived from the committed cell.
+
+Recorded Sessions retain the execution and measurement history. Each site log is
+written once by MPSSplitLab using its own fields; LoopTNR registers its own RG
+boundary event. No outer logging context is passed into the split algorithm.
+The numerical state contains no record refs.
+See LoopTNRLab's `docs/execution-refactor.md` and its three focused examples.

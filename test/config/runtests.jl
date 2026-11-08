@@ -33,4 +33,4 @@ include("json_interface_test.jl")
 include("output_contract_test.jl")
 
 include("automatic_display_test.jl")
-include("reflect_test.jl")
+include("registry_test.jl")

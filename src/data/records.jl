@@ -17,7 +17,7 @@ function record_algorithm!(store::DataStore, config::AbstractAlgorithmConfig;
     provider = plain_data(implementation(frozen))
     return change!(store) do document
         ref = add_record!(document, store, :algorithm; label=String(label),
-            config=encoded, config_type=string(typeof(frozen)), metadata=details,
+            config=encoded, config_type=stored_type_name(frozen), metadata=details,
             config_format="jld2-v1", implementation=provider)
         write_native(algorithm_path(store, ref.id), (; schema=1, algorithm=string(ref.id), value=frozen))
         document["algorithms"][string(ref.id)]["julia_config"] = "algorithms/$(ref.id).jld2"
@@ -35,7 +35,7 @@ function load_algorithm(store::DataStore, ref::AlgorithmRef)
         get(payload, :algorithm, nothing) == string(ref.id) &&
         get(payload, :value, nothing) isa AbstractAlgorithmConfig ||
         throw(ArgumentError("invalid algorithm configuration"))
-    string(typeof(payload.value)) == record["config_type"] ||
+    stored_type_name(payload.value) == record["config_type"] ||
         throw(ArgumentError("algorithm configuration type does not match its record"))
     return payload.value
 end

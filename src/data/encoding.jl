@@ -1,3 +1,6 @@
+# Type labels in storage must not depend on names imported by the caller.
+stored_type_name(value) = sprint(show, typeof(value); context=:module => nothing)
+
 # Dynamic dictionaries are confined to storage/JSON boundaries, not tensor work.
 function plain_data(value, path::AbstractString="data", depth::Integer=0)
     depth <= 32 || throw(ArgumentError("$path: cyclic or excessively nested data"))

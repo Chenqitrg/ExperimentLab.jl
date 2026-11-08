@@ -117,5 +117,6 @@ for a recorded Session; its driver owns that transition. Finalization does not
 synthesize log messages: ordinary algorithm logs and the terminal record serve
 their separate roles. No automatic tensor snapshots or disk restart are added.
 
-Existing tensor callers of the older ExecutionLab run/observer protocol require
-a separate generator migration.
+MPSSplitLab and LoopTNRLab now supply `split_steps` and `tnr_steps` generators.
+They use these same Session controls and recorded entry points; numerical snapshot
+capture and restoration remain in the domain packages.

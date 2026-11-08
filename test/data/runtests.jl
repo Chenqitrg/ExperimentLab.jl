@@ -22,6 +22,7 @@ end
     include("snapshots.jl")
     include("measurements.jl")
     include("jld2.jl")
+    include("type_identity.jl")
     include("show.jl")
     include("tree_show.jl")
     include("describe.jl")

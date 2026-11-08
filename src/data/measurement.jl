@@ -27,7 +27,7 @@ function start_measurement!(store::DataStore, definition::AbstractMeasurement, s
         ref = add_record!(document, store, :measurement; parent=state,
             input_snapshot=input_snapshot === nothing ? nothing : ref_data(input_snapshot),
             config, implementation=provider, metadata=encoded, status="running",
-            config_type=string(typeof(definition)),
+            config_type=stored_type_name(definition),
             julia_config_format="jld2-v1", result=nothing, error=nothing)
         write_native(measurement_config_path(store, ref.id),
             (; schema=1, attempt=string(ref.id), value=definition))
@@ -50,7 +50,7 @@ measurement_config_path(store::DataStore, id::UUID) = joinpath(store.path, "meas
 """Encode and persist a result before publishing completion. Failures propagate."""
 function finish_measurement!(store::DataStore, ref::MeasurementRef, result::AbstractMeasurementResult)
     payload = (; schema=1, kind="measurement_result", attempt=string(ref.id),
-        type=string(typeof(result)), data=plain_data(result_data(result), "result"))
+        type=stored_type_name(result), data=plain_data(result_data(result), "result"))
     change!(store) do document
         record = running_attempt(document, store, ref)
         write_native(native_result_path(store, ref.id),
@@ -61,7 +61,7 @@ function finish_measurement!(store::DataStore, ref::MeasurementRef, result::Abst
         record["result"] = "measurements/$(ref.id).json"
         record["julia_result"] = "measurements/$(ref.id).jld2"
         record["julia_result_format"] = "jld2-v1"
-        record["result_type"] = string(typeof(result))
+        record["result_type"] = stored_type_name(result)
     end
     return ref
 end
@@ -141,7 +141,7 @@ function load_result(store::DataStore, ref::MeasurementRef)
         get(payload, :attempt, nothing) == string(ref.id) &&
         get(payload, :value, nothing) isa AbstractMeasurementResult ||
         throw(ArgumentError("invalid Julia result payload"))
-    string(typeof(payload.value)) == record["result_type"] ||
+    stored_type_name(payload.value) == record["result_type"] ||
         throw(ArgumentError("Julia result type does not match its record"))
     return payload.value
 end
@@ -172,7 +172,7 @@ function load_measurement(store::DataStore, ref::MeasurementRef)
         get(payload, :attempt, nothing) == string(ref.id) &&
         get(payload, :value, nothing) isa AbstractMeasurement ||
         throw(ArgumentError("invalid Julia measurement configuration"))
-    string(typeof(payload.value)) == record["config_type"] ||
+    stored_type_name(payload.value) == record["config_type"] ||
         throw(ArgumentError("measurement configuration type does not match its record"))
     return payload.value
 end

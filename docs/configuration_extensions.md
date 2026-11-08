@@ -16,43 +16,69 @@ data = to_dict(settings)
 restored = from_dict(Solver, data)
 ```
 
-ExperimentLab does not wrap `@option` or maintain a second schema/registry.
-JSON files contain these dictionaries. `readconfig(path, T)` requires a concrete
-option type; parameterized roots can use `typeof(settings)`. JSON is parameter
+ExperimentLab does not wrap `@option` or duplicate its defaults and validation.
+Unregistered configurations use parameter dictionaries; `readconfig(path, T)`
+then requires a concrete option type such as `typeof(settings)`. JSON is parameter
 interchange, not a replacement for native checkpoints. Arbitrary Julia objects
 need an explicit upstream conversion; plain Julia structs can still use tree
 construction/display without opting into JSON.
 
 ## Explicit type identity in JSON
 
-Use Configurations' `Reflect` field when a configuration node must identify its
-strategy to readers that do not already know its Julia type:
+Keep serialization names outside the structs. A configuration registry maps
+stable names to `@option` types or parametric constructors:
 
 ```julia
-@option "MyPackage.DirectMethod" struct DirectMethod <: AbstractAlgorithmConfig
-    type::Reflect
-end
+@option struct DirectMethod <: AbstractAlgorithmConfig end
+
+const METHOD_CONFIGS = ExperimentLab.ConfigRegistry(
+    "MyPackage.DirectMethod" => DirectMethod,
+)
+ExperimentLab.config_registry(::Type{DirectMethod}) = METHOD_CONFIGS
 
 writeconfig(stdout, DirectMethod())
-# {"type":"MyPackage.DirectMethod"}
+# {"type":"MyPackage.DirectMethod","parameters":{}}
 ```
 
-`Reflect` is a zero-size serialization marker with an automatic default. Users
-do not supply it when constructing or updating parameters. ExperimentLab omits
-it from editable trees, tree defaults and display, including fallback display.
-An ordinary parameter named `type` is unaffected. Inner constructors must accept
-and preserve the marker along with their other stored fields so Configurations
-and Accessors can reconstruct the value.
+`config_registry(T)` is an author hook. It lets ordinary `writeconfig(path, obj)`
+and record storage discover the registry automatically. A caller can instead
+provide `writeconfig(path, obj; registry)`. Nested configurations consult their
+own hooks as well. Compose package entries with `ConfigRegistry(first, second)`;
+duplicate identical entries are shared, while conflicting names/types throw.
+There is no process-global mutable registration table.
 
-Add the marker to each nested option type whose identity must appear in JSON.
-The alias above is for a non-parametric type; without an alias, `Reflect` emits
-the full Julia type name, including concrete type parameters. Reading still
-uses `readconfig(path, T)` with a concrete type. Keep the default
-`include_defaults=true` when exporting these identities: Configurations may
-omit the marker along with other defaults when `include_defaults=false`.
+Read with `readconfig(path, typeof(obj))`, or `readconfig(path, registry)` when
+the file selects a registered root. JSON names are looked up, never evaluated.
+Parameterized constructors infer their type parameters from decoded children;
+non-inferable parameters require registering a concrete specialization. The
+registry must cover children whose types cannot be determined from their parent.
+Configurations still supplies defaults, concrete field conversion and validation.
+Third-party field conversions remain the upstream hooks described below.
+For example, a registered `SVDInitialization` identifies the wrapper, but its
+MatrixAlgebraKit truncation field still needs a concrete owner type for loading.
+Use `readconfig(path, typeof(config))` for such fields. An untagged JSON object
+in an unconstrained type parameter is rejected rather than silently becoming a
+Julia `Dict`; raw dictionary parameters should declare an `AbstractDict` bound
+or be loaded with a concrete owner type.
 
-This is opt-in. Existing option types without a marker still serialize only
-their parameter fields; ExperimentLab does not inject a second type schema.
+`ExperimentLab.config_record(registry, obj)` returns the same JSON-ready record
+without writing a file. `ExperimentLab.describe(registry)` describes its mappings.
+These author interfaces remain qualified, like the existing tree hooks.
+
+Registered nodes always retain their `type`, even with `include_defaults=false`.
+An ordinary algorithm parameter called `type` lives inside `parameters` and does
+not conflict. Structs, constructors, editable trees and Accessors updates require
+no serialization fields or display exceptions. Unregistered nodes remain plain
+parameter dictionaries; registering one subtree does not identify the rest of
+an application automatically.
+
+The domain packages register every production configuration: UpdateLab (2),
+TensorLinearSolveLab (4), PMPSLab (3),
+MPSSplitLab (12), and LoopTNRLab (2). Parent packages compose their dependencies'
+registries. ExperimentLab does not depend on those packages. Stored algorithm
+and measurement records use the same representation as `writeconfig`.
+
+See the runnable [registry example](../examples/config/extras/registered_json.jl).
 
 ## Validation and updates
 
