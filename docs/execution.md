@@ -2,7 +2,8 @@
 
 ExperimentLab runs ResumableFunctions generators in a controllable background
 Task. Algorithms use ordinary loops, `@yield` for progress, and `return` for
-the final result. They do not implement an ExperimentLab run type or step protocol.
+the final result. Stateful algorithms can implement the shared `algorithm_steps`
+interface below; plain generators remain supported without an algorithm-state type.
 
 ```julia
 using ExperimentLab
@@ -24,6 +25,47 @@ fetch(session)  # 6
 For nesting, `answer = @yieldfrom child(...)` forwards the child's progress
 and assigns its final return value to `answer`. See
 [the nested example](../examples/execution/03_nested.jl).
+
+## Algorithm state protocol
+
+`AbstractAlgorithmState` marks algorithm-owned numerical state. It does not require
+particular fields or contain Session control state. Algorithm packages extend the
+shared `algorithm_steps` generic to construct a generator for their state:
+
+```julia
+using ExperimentLab, ResumableFunctions
+import ExperimentLab: algorithm_steps
+
+mutable struct SumState <: AbstractAlgorithmState
+    limit::Int
+    completed::Int
+    total::Int
+end
+
+@resumable function algorithm_steps(state::SumState)::Int
+    while state.completed < state.limit
+        state.completed += 1
+        state.total += state.completed
+        @yield state.completed
+    end
+    return (; total=state.total)
+end
+
+state = SumState(3, 0, 0)
+session = start_run(algorithm_steps(state))
+fetch(session) # (total = 6,)
+```
+
+Import the generic before defining the unqualified `@resumable` method. A step
+must leave the numerical state safe to inspect or capture before yielding. The
+yielded value and final result may have any type; ExperimentLab imposes no shared
+progress fields. Nested algorithms use `@yieldfrom algorithm_steps(child)`.
+Do not drive two generators that mutate the same state concurrently.
+
+PMPSLab's `AbstractSplitState` and LoopTNRLab's `LoopTNRState` subtype
+`AbstractAlgorithmState`. Both extend `ExperimentLab.algorithm_steps`; the old
+`split_steps` and `tnr_steps` entry points have been removed. Their initialization
+and numerical restoration functions remain package-specific.
 
 ## Controls
 
@@ -58,8 +100,11 @@ while a Session owns it, or give the same generator to two Sessions.
 ## Checkpoint scope
 
 The execution controller handles live generators and has no checkpoint API.
-Saving tensors with JLD2 does not by itself restore a paused generator; generator restart/resume from disk remains a separate design step.
-Existing algorithms using the removed run protocol need a later migration.
+Saving tensors with JLD2 does not by itself restore a paused generator. `capture`
+uses `copy_state`, whose default is `deepcopy`; an algorithm may specialize it to
+produce a compact snapshot. Numerical restoration remains algorithm-owned. After
+restoring a state, create a new generator with `algorithm_steps(restored)` and
+pass it to `start_run`. Arbitrary-value snapshots remain supported.
 
 ## Review
 
@@ -117,6 +162,6 @@ for a recorded Session; its driver owns that transition. Finalization does not
 synthesize log messages: ordinary algorithm logs and the terminal record serve
 their separate roles. No automatic tensor snapshots or disk restart are added.
 
-PMPSLab and LoopTNRLab now supply `split_steps` and `tnr_steps` generators.
+PMPSLab and LoopTNRLab supply methods of `ExperimentLab.algorithm_steps`.
 They use these same Session controls and recorded entry points; numerical snapshot
 capture and restoration remain in the domain packages.

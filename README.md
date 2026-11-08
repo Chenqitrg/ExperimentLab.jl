@@ -65,6 +65,13 @@ Saving is explicit: `record_state!` creates metadata, `capture` makes an indepen
 copy, and `save_snapshot!` writes it to disk. Yielding a value alone does not save it.
 To run without records or files, use `start_run(partial_sums(settings))`.
 
+Stateful algorithms can subtype `AbstractAlgorithmState` and extend
+`ExperimentLab.algorithm_steps(state)` with a resumable generator. Both PMPSLab
+and LoopTNRLab use this interface, so their states run through
+`start_run(algorithm_steps(state); onstep=...)`. State fields, progress values and
+snapshot restoration remain algorithm-owned; ordinary generators such as the
+example above still work. See [the algorithm state protocol](docs/execution.md#algorithm-state-protocol).
+
 ## How the pieces fit
 
 A **Session** is a live, in-memory controller for one running generator. A **Ref**

@@ -1,4 +1,5 @@
 include("ownership.jl")
+include("algorithm_protocol.jl")
 include("generator_sessions.jl")
 include("describe.jl")
 include("integration.jl")

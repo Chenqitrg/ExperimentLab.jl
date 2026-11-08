@@ -2,6 +2,7 @@
     expected = Set((:AbstractAlgorithmConfig, Symbol("@config"), :readconfig, :writeconfig, :DataStore, :record_state!, :capture, :save_snapshot!, :load_snapshot,
         :AbstractMeasurement, :AbstractMeasurementResult, :measure, :measure!, :load_result,
         :AbstractLogEvent, :EventRegistry, :event_record,
+        :AbstractAlgorithmState, :algorithm_steps,
         :start_run, :pause!, :resume!, :cancel!, :run_status))
     exported = Set(filter(n -> n !== :ExperimentLab && Base.isexported(ExperimentLab, n),
                           names(ExperimentLab)))
