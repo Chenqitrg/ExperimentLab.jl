@@ -179,3 +179,20 @@ JULIA_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 JULIA_NUM_PRECOMPILE_TASKS=1 julia --
 Tests cover configuration, storage, log ownership and failures, cooperative and
 threaded execution, and package boundaries. They use small inputs and do not run
 MPS or LoopTNR calculations.
+
+## Acknowledgements
+
+ExperimentLab grew out of the experiment-management needs of PMPSLab and
+LoopTNRLab. We are grateful to the authors and contributors of
+[TNRKit.jl](https://github.com/QuantumKitHub/TNRKit.jl) for the work that helped
+inspire this effort.
+
+The idea of separating algorithm configuration from the iterator that drives
+execution comes from Zhengyuan Yue's [TRG implementation](https://github.com/Yue-Zhengyuan/TNRKit.jl/blob/9cc5088bcca55ff9c5a72403764acfe8e9ceeb21/src/schemes/trg.jl)
+and its [Renormalizer iterator](https://github.com/Yue-Zhengyuan/TNRKit.jl/blob/9cc5088bcca55ff9c5a72403764acfe8e9ceeb21/src/schemes/renormalizer.jl)
+in his TNRKit fork. We are grateful to him for sharing this design and for the
+helpful discussions that informed this work.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
